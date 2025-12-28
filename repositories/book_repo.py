@@ -1,0 +1,88 @@
+import json
+from typing import List, Optional, Dict, Any
+from database import Database
+from schemas.responses import BookResponse, BookDetailResponse
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class BookRepository:
+    
+    @staticmethod
+    async def get_all_active(
+        age_range: Optional[str] = None,
+        category: Optional[str] = None
+    ) -> List[BookResponse]:
+        """Get all active books with optional filters"""
+        
+        query = "SELECT * FROM books WHERE is_active = 1"
+        params = []
+        
+        if age_range:
+            query += " AND age_range = ?"
+            params.append(age_range)
+        
+        if category:
+            query += " AND category = ?"
+            params.append(category)
+        
+        query += " ORDER BY created_at DESC"
+        
+        rows = await Database.fetch_all(query, tuple(params))
+        
+        return [BookRepository._row_to_response(row) for row in rows]
+    
+    @staticmethod
+    async def get_by_id(book_id: int) -> Optional[BookDetailResponse]:
+        """Get book by ID with all details"""
+        
+        query = "SELECT * FROM books WHERE id = ? AND is_active = 1"
+        row = await Database.fetch_one(query, (book_id,))
+        
+        if not row:
+            return None
+        
+        return BookRepository._row_to_detail_response(row)
+    
+    @staticmethod
+    def _row_to_response(row: Dict[str, Any]) -> BookResponse:
+        """Convert DB row to BookResponse"""
+        return BookResponse(
+            id=row['id'],
+            title=row['title'],
+            description=row['description'],
+            age_range=row['age_range'],
+            category=row['category'],
+            price=row['price'],
+            character_count=row['character_count'],
+            cover_image_url=f"/static/templates/story_{row['id']}/cover.jpg" if row['cover_image_path'] else None
+        )
+    
+    @staticmethod
+    def _row_to_detail_response(row: Dict[str, Any]) -> BookDetailResponse:
+        """Convert DB row to BookDetailResponse with preview images"""
+        
+        # Parse preview images JSON
+        preview_images = []
+        if row['preview_images']:
+            try:
+                preview_paths = json.loads(row['preview_images'])
+                preview_images = [
+                    f"/static/templates/story_{row['id']}/previews/{path}"
+                    for path in preview_paths
+                ]
+            except json.JSONDecodeError:
+                logger.warning(f"Invalid preview_images JSON for book {row['id']}")
+        
+        return BookDetailResponse(
+            id=row['id'],
+            title=row['title'],
+            description=row['description'],
+            age_range=row['age_range'],
+            category=row['category'],
+            price=row['price'],
+            character_count=row['character_count'],
+            cover_image_url=f"/static/templates/story_{row['id']}/cover.jpg" if row['cover_image_path'] else None,
+            preview_images_urls=preview_images
+        )
