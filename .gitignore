@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+
+# Keys & Secrets
+keys/
+*.json
+
+# Database
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# User-generated content (under stories/)
+stories/uploads/
+stories/previews/
+stories/generated/
+stories/exports/
+
+# Keep templates folder but ignore everything except .gitkeep
+# (We'll add templates manually)
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
