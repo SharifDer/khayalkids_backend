@@ -86,3 +86,29 @@ class BookRepository:
             cover_image_url=f"/static/templates/story_{row['id']}/cover.jpg" if row['cover_image_path'] else None,
             preview_images_urls=preview_images
         )
+
+    @staticmethod
+    async def update_paths(
+        book_id: int,
+        template_path: str,
+        cover_image_path: str,
+        preview_images: list[str]
+    ):
+        query = """
+        UPDATE books
+        SET
+            template_path = ?,
+            cover_image_path = ?,
+            preview_images = ?
+        WHERE id = ?
+        """
+
+        await Database.execute(
+            query,
+            (
+                template_path,
+                cover_image_path,
+                json.dumps(preview_images),
+                book_id
+            )
+        )
