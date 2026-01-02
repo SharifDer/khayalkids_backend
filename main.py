@@ -6,7 +6,7 @@ import os
 
 from config import settings
 from database import Database
-from api import books, health
+from api import books, health, admin
 
 # Configure logging
 logging.basicConfig(
@@ -45,6 +45,8 @@ app = FastAPI(
 )
 
 
+
+
 @app.on_event("startup")
 async def startup_event():
     """Run on application startup"""
@@ -77,7 +79,7 @@ app.mount("/static", StaticFiles(directory=settings.STORIES_BASE_DIR), name="sta
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(books.router, prefix="/api", tags=["Books"])
-
+app.include_router(admin.router, prefix="/api", tags=["Admin"])
 
 @app.get("/")
 async def root():
