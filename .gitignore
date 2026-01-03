@@ -19,11 +19,11 @@ data/
 *.db-wal
 
 # User-generated content (under stories/)
-stories/uploads/
-stories/previews/
-stories/generated/
-stories/exports/
-
+# stories/uploads/
+# stories/previews/
+# stories/generated/
+# stories/exports/
+stories
 # Keep templates folder but ignore everything except .gitkeep
 # (We'll add templates manually)
 
