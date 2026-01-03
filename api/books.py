@@ -8,11 +8,8 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/books", response_model=List[BookResponse])
-async def get_books(
-    age_range: Optional[str] = None,
-    category: Optional[str] = None
-):
+@router.get("/get_books", response_model=List[BookResponse])
+async def get_books():
     """
     Get all active books with optional filtering
     
@@ -21,17 +18,14 @@ async def get_books(
     - category: Filter by category (e.g., "adventure", "educational")
     """
     try:
-        books = await BookRepository.get_all_active(
-            age_range=age_range,
-            category=category
-        )
+        books = await BookRepository.get_all_active()
         return books
     except Exception as e:
         logger.error(f"Error fetching books: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch books")
 
 
-@router.get("/books/{book_id}", response_model=BookDetailResponse)
+@router.get("/get_book_details/{book_id}", response_model=BookDetailResponse)
 async def get_book_detail(book_id: int):
     """
     Get detailed information about a specific book including preview images
