@@ -73,7 +73,8 @@ app.add_middleware(
 
 
 # Mount static files (after directories are created)
-app.mount("/static", StaticFiles(directory=settings.STORIES_BASE_DIR), name="static")
+app.mount("/stories", StaticFiles(directory=settings.STORIES_BASE_DIR), name="stories")
+
 
 
 # Include routers
