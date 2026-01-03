@@ -13,9 +13,7 @@ class BookResponse(BaseModel):
     title: str
     description: Optional[str] = None
     age_range: Optional[str] = None
-    category: Optional[str] = None
     price: float
-    character_count: int
     cover_image_url: Optional[str] = None
 
 
