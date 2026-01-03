@@ -38,7 +38,7 @@ async def create_book(
         path = f"{previews_path}/page_{i}.jpg"
         with open(path, "wb") as f:
             shutil.copyfileobj(image.file, f)
-        preview_paths.append(f"page_{i}.jpg")
+        preview_paths.append(f"{base_path}/previews/page_{i}.jpg")
 
     # تحديث المسارات
     await BookRepository.update_paths(
