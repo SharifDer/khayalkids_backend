@@ -1,62 +1,45 @@
-
-from fastapi import APIRouter, Form, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
+from schemas.requests import CreateBookRequest
 from repositories.book_repo import BookRepository
 import os
 import shutil
 
-
 router = APIRouter()
-
 
 @router.post("/admin/books")
 async def create_book(
-    title: str = Form(...),
-    description: str = Form(...),
-    age_range: str = Form(...),
-    gender: str = Form(...),
-    price: float = Form(...),
-
+    book: CreateBookRequest = Depends(),  
     template_file: UploadFile = File(...),
     cover_image: UploadFile = File(...),
     preview_images: list[UploadFile] = File(...)
 ):
-    #  إنشاء الكتاب في قاعدة البيانات (بدون ملفات)
-    book_id = await BookRepository.create(
-        type("obj", (), {
-            "title": title,
-            "description": description,
-            "age_range": age_range,
-            "gender": gender,
-            "price": price
-        })
-    )
+    # إنشاء الكتاب (بيانات فقط)
+    book_id = await BookRepository.create(book.dict())
 
-    #  إنشاء مجلدات القصة
+    # مسارات الملفات
     base_path = f"stories/templates/story_{book_id}"
     previews_path = f"{base_path}/previews"
-
-
     os.makedirs(previews_path, exist_ok=True)
 
-    #  حفظ ملف القالب
+    # حفظ template
     template_path = f"{base_path}/template.pptx"
     with open(template_path, "wb") as f:
         shutil.copyfileobj(template_file.file, f)
 
-    #  حفظ صورة الغلاف
+    # حفظ الغلاف
     cover_path = f"{base_path}/cover.jpg"
     with open(cover_path, "wb") as f:
         shutil.copyfileobj(cover_image.file, f)
 
-    #  حفظ صور المعاينة
+    # حفظ المعاينات
     preview_paths = []
-    for index, image in enumerate(preview_images, start=1):
-        image_path = f"{previews_path}/page_{index}.jpg"
-        with open(image_path, "wb") as f:
+    for i, image in enumerate(preview_images, start=1):
+        path = f"{previews_path}/page_{i}.jpg"
+        with open(path, "wb") as f:
             shutil.copyfileobj(image.file, f)
-        preview_paths.append(f"page_{index}.jpg")
+        preview_paths.append(f"page_{i}.jpg")
 
-    #  تحديث المسارات في قاعدة البيانات
+    # تحديث المسارات
     await BookRepository.update_paths(
         book_id=book_id,
         template_path=template_path,
@@ -66,6 +49,5 @@ async def create_book(
 
     return {
         "book_id": book_id,
-        "message": "Book created with files"
+        "message": "Book created"
     }
-
