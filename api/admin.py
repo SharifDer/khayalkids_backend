@@ -3,6 +3,7 @@ from schemas.requests import CreateBookRequest
 from repositories.book_repo import BookRepository
 import os
 import shutil
+from config import settings
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ async def create_book(
     book_id = await BookRepository.create(book.dict())
 
     # مسارات الملفات
-    base_path = f"stories/templates/story_{book_id}"
+    base_path = f"{settings.TEMPLATES_DIR}/story_{book_id}"
     previews_path = f"{base_path}/previews"
     os.makedirs(previews_path, exist_ok=True)
 
