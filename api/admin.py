@@ -22,7 +22,7 @@ async def create_book(
     previews_path = f"{base_path}/previews"
     os.makedirs(previews_path, exist_ok=True)
 
-    # حفظ template
+
     template_path = f"{base_path}/template.pptx"
     with open(template_path, "wb") as f:
         shutil.copyfileobj(template_file.file, f)

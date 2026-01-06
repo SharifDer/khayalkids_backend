@@ -11,11 +11,7 @@ logger = logging.getLogger(__name__)
 @router.get("/get_books", response_model=List[BookResponse])
 async def get_books():
     """
-    Get all active books with optional filtering
-    
-    Query params:
-    - age_range: Filter by age range (e.g., "0-3", "4-6", "7-10")
-    - category: Filter by category (e.g., "adventure", "educational")
+    Get all active books 
     """
     try:
         books = await BookRepository.get_all_active()
