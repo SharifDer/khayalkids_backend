@@ -37,18 +37,10 @@ class Settings(BaseSettings):
         
         # Load face swapping API key
         faceswap_key_file = Path("keys/facewow_key.json")
-        if faceswap_key_file.exists():
-            with open(faceswap_key_file) as f:
-                data = json.load(f)
-                self.FACESWAPPING_API = data.get("FaceWow_Api", "")
-        
-        # # Load Stripe keys
-        # stripe_key_file = Path("keys/stripe_key.json")
-        # if stripe_key_file.exists():
-        #     with open(stripe_key_file) as f:
-        #         data = json.load(f)
-        #         self.STRIPE_SECRET_KEY = data.get("secret_key", "")
-        #         self.STRIPE_WEBHOOK_SECRET = data.get("webhook_secret", "")
-
+        with open(faceswap_key_file) as f:
+            data = json.load(f)
+            self.FACESWAPPING_API = data.get("FaceWow_Api", "")
+    
+   
 
 settings = Settings()
