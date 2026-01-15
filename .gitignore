@@ -11,7 +11,7 @@ venv/
 # Keys & Secrets
 keys/
 performance_logs/
-
+docs/
 # Database
 data/
 *.db
