@@ -7,3 +7,4 @@ class CreateBookRequest(BaseModel):
     age_range: str
     gender: Literal["male", "female"]
     price: float
+    hero_name: str

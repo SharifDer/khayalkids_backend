@@ -6,7 +6,7 @@ import os
 
 from config import settings
 from database import Database
-from api import books, health, admin
+from api import books, health, admin, previews
 
 # Configure logging
 logging.basicConfig(
@@ -81,6 +81,7 @@ app.mount("/stories", StaticFiles(directory=settings.STORIES_BASE_DIR), name="st
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(books.router, prefix="/api", tags=["Books"])
 app.include_router(admin.router, prefix="/api", tags=["Admin"])
+app.include_router(previews.router, prefix="/api", tags=["Previews"])
 
 @app.get("/")
 async def root():

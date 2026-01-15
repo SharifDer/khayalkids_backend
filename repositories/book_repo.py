@@ -1,17 +1,41 @@
+# In repositories/book_repo.py
+
 import json
 from typing import List, Optional, Dict, Any
+from pathlib import Path
 from database import Database
 from schemas.responses import BookResponse, BookDetailResponse
 import logging
 
 logger = logging.getLogger(__name__)
 
-
 class BookRepository:
     
     @staticmethod
-    async def get_all_active(
-    ) -> List[BookResponse]:
+    def parse_reference_paths(book_record) -> List[Path]:
+        """
+        Parse character_reference_image_url from database
+        Supports both old format (single string) and new format (JSON array)
+        """
+        reference_field = book_record.character_reference_image_url
+        
+        if not reference_field:
+            return []
+        
+        # Try to parse as JSON array
+        try:
+            paths = json.loads(reference_field)
+            if isinstance(paths, list):
+                return [Path(p) for p in paths if p]
+            else:
+                # Single path wrapped in JSON string
+                return [Path(paths)]
+        except (json.JSONDecodeError, TypeError):
+            # Backward compatibility: old format was plain string
+            return [Path(reference_field)]
+    
+    @staticmethod
+    async def get_all_active() -> List[BookResponse]:
         """Get all active books with optional filters"""
         
         query = "SELECT * FROM books WHERE is_active = 1"
@@ -69,6 +93,8 @@ class BookRepository:
             age_range=row['age_range'],
             price=row['price'],
             cover_image_url=f"/{row['cover_image_path']}" if row['cover_image_path'] else None,
+            hero_name=row["hero_name"],
+            character_reference_image_url=row["character_reference_image_url"],
             preview_images_urls=preview_images
         )
     
@@ -76,8 +102,8 @@ class BookRepository:
     async def create(book_data: dict) -> int:
         """Create new book, return book_id"""
         query = """
-            INSERT INTO books (title, description, age_range, gender, price, template_path)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO books (title, description, age_range, gender, price, hero_name, template_path, character_reference_image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ? , ?)
         """
         params = (
             book_data['title'],
@@ -85,7 +111,9 @@ class BookRepository:
             book_data['age_range'],
             book_data['gender'],
             book_data['price'],
-            "placeholder"  # Will be updated by update_paths() immediately after
+            book_data['hero_name'],
+            "placeholder",  # Will be updated by update_paths() immediately after
+            "placeholder"
         )
         
         async with Database.connection() as conn:
@@ -93,19 +121,21 @@ class BookRepository:
             await conn.commit()
             return cursor.lastrowid
 
-
     @staticmethod
     async def update_paths(
         book_id: int,
         template_path: str,
         cover_image_path: str,
+        character_reference_image_urls: List[str],  # ✨ CHANGED: Now accepts list
         preview_images: list[str]
     ):
+        """Update file paths for book, storing references as JSON array"""
         query = """
         UPDATE books
         SET
             template_path = ?,
             cover_image_path = ?,
+            character_reference_image_url = ?,
             preview_images = ?
         WHERE id = ?
         """
@@ -115,6 +145,7 @@ class BookRepository:
             (
                 template_path,
                 cover_image_path,
+                json.dumps(character_reference_image_urls),  # ✨ CHANGED: Store as JSON
                 json.dumps(preview_images),
                 book_id
             )
