@@ -10,7 +10,7 @@ venv/
 
 # Keys & Secrets
 keys/
-*.json
+performance_logs/
 
 # Database
 data/
