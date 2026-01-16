@@ -1,8 +1,6 @@
 # Main preview generation orchestration
 import logging
 import os
-
-
 from pathlib import Path
 import numpy as np 
 from deepface import DeepFace  
@@ -17,21 +15,19 @@ from typing import Optional, List, Dict
 import asyncio
 import aiohttp
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 
 class PreviewGenerationService:
     
     PREVIEW_PAGES_COUNT = 3  # First 3 slides for preview
 
-
     @staticmethod
     async def _process_single_image(
         idx: int,
         img_data: Dict,
         averaged_reference: np.ndarray,
-        full_photo_path: str,
         swapped_images_dir: Path
     ) -> Optional[Dict]:
         """Process image: detect face, START swap in background (don't wait for it)"""
@@ -71,7 +67,6 @@ class PreviewGenerationService:
             
             logger.info(f"Matched face distance: {protagonist_crop['distance']:.2f}")
             
-
             # Return with pending task - swap runs in background
             return {
                 'slide_idx': img_data['slide_idx'],
@@ -86,6 +81,88 @@ class PreviewGenerationService:
             logger.error(f"Error processing image {idx}: {e}", exc_info=True)
             return None
 
+    @staticmethod
+    async def process_and_swap_faces(
+        extracted_images: List[Dict],
+        averaged_reference: np.ndarray,
+        child_photo_path: str,
+        swapped_images_dir: Path,
+        progress_callback: Optional[callable] = None
+    ) -> List[Dict]:
+        """
+        SHARED METHOD: Process images and swap faces
+        Used by both preview and full book generation
+        
+        Returns: List of {slide_idx, shape_id, swapped_path}
+        """
+        # STEP 1: Process each image (detect protagonist)
+        tasks = [
+            PreviewGenerationService._process_single_image(
+                idx=idx,
+                img_data=img_data,
+                averaged_reference=averaged_reference,
+                swapped_images_dir=swapped_images_dir
+            )
+            for idx, img_data in enumerate(extracted_images)
+        ]
+        
+        logger.info(f"Starting parallel processing of {len(tasks)} images")
+        results = await asyncio.gather(*tasks)
+        
+        # Filter out None results
+        valid_results = [r for r in results if r is not None]
+        
+        if not valid_results:
+            raise ValueError("No faces could be swapped")
+        
+        # STEP 2: Face swap in parallel
+        loop = asyncio.get_event_loop()
+        logger.info(f"Waiting for {len(valid_results)} face swaps in parallel")
+        
+        async with aiohttp.ClientSession() as session:
+            swap_tasks = [
+                asyncio.create_task(FaceSwapService.swap_face(
+                    session=session,
+                    child_photo_path=str(child_photo_path),
+                    character_crop_path=r['protagonist_crop']['cropped_path'],
+                    output_dir=str(swapped_images_dir)
+                ))
+                for r in valid_results
+            ]
+            swap_results = await asyncio.gather(*swap_tasks)
+        
+        # STEP 3: Composite all images in parallel
+        logger.info(f"Compositing {len(valid_results)} images in parallel")
+        composite_tasks = [
+            loop.run_in_executor(
+                None,
+                FaceDetectionService.composite_face,
+                valid_results[i]['img_path'],
+                swap_results[i],
+                valid_results[i]['protagonist_crop']['coordinates'],
+                str(valid_results[i]['swapped_images_dir'] / f"swapped_{valid_results[i]['idx']}.jpg")
+            )
+            for i in range(len(valid_results))
+        ]
+        final_paths = await asyncio.gather(*composite_tasks)
+        
+        # Build metadata
+        image_metadata = [
+            {
+                'slide_idx': valid_results[i]['slide_idx'],
+                'shape_id': valid_results[i]['shape_id'],
+                'swapped_path': final_paths[i]
+            }
+            for i in range(len(valid_results))
+        ]
+        
+        logger.info(f"Face swapping complete: {len(image_metadata)} images")
+        
+        # Call progress callback if provided
+        if progress_callback:
+            await progress_callback(len(image_metadata))
+        
+        return image_metadata
 
     @staticmethod
     async def generate_preview(
@@ -112,13 +189,12 @@ class PreviewGenerationService:
             
             hero_name = book.hero_name
             
-            # Parse reference paths (handles both old and new format)
+            # Parse reference paths
             reference_paths = BookRepository.parse_reference_paths(book)
             
             if not reference_paths:
                 raise FileNotFoundError(f"No reference images configured for book {book_id}")
             
-            # Filter out missing references and validate
             valid_references = [p for p in reference_paths if p.exists()]
             
             if not valid_references:
@@ -136,10 +212,8 @@ class PreviewGenerationService:
             # Child photo path
             full_photo_path = photo_path
             
-            # STEP 1: Copy template to preview folder and customize
+            # STEP 1: Copy template and customize text
             customized_pptx = preview_dir / "customized.pptx"
-            
-            # Replace text (hero_name → child_name)
             PPTXService.replace_text_in_pptx(
                 pptx_path=str(template_pptx),
                 replacements={hero_name: child_name},
@@ -148,7 +222,7 @@ class PreviewGenerationService:
             
             logger.info(f"Text customization complete: {hero_name} → {child_name}")
             
-            # STEP 2: Extract images from customized PPTX (first 3 slides)
+            # STEP 2: Extract images from first 3 slides
             extracted_dir = preview_dir / "extracted"
             extracted_images = PPTXService.extract_images_from_slides(
                 pptx_path=str(customized_pptx),
@@ -161,7 +235,7 @@ class PreviewGenerationService:
             
             logger.info(f"Extracted {len(extracted_images)} images")
             
-            # ✨ OPTIMIZATION: Extract reference embeddings ONCE (not per image)
+            # STEP 3: Load reference embeddings
             reference_embeddings = []
             for ref_path in valid_references:
                 try:
@@ -180,81 +254,20 @@ class PreviewGenerationService:
                 raise ValueError("No valid reference images")
             
             averaged_reference = np.mean(reference_embeddings, axis=0)
-            logger.info(f"⚡ Cached {len(reference_embeddings)} reference embeddings (norm: {np.linalg.norm(averaged_reference):.2f})")
-
-
-            # STEP 3: Process each image (detect protagonist + start face swap in background)
+            logger.info(f"⚡ Cached {len(reference_embeddings)} reference embeddings")
+            
+            # STEP 4: Process and swap faces (SHARED METHOD)
             swapped_images_dir = preview_dir / "swapped"
             swapped_images_dir.mkdir(exist_ok=True)
-
-            tasks = [
-                PreviewGenerationService._process_single_image(
-                    idx=idx,
-                    img_data=img_data,
-                    averaged_reference=averaged_reference,
-                    full_photo_path=full_photo_path,
-                    swapped_images_dir=swapped_images_dir
-                )
-                for idx, img_data in enumerate(extracted_images)
-            ]
-
-            # Run all tasks in parallel (face detection + start face swaps)
-            logger.info(f"Starting parallel processing of {len(tasks)} images")
-            results = await asyncio.gather(*tasks)
-
-            # Filter out None results
-            valid_results = [r for r in results if r is not None]
             
-            if not valid_results:
-                raise ValueError("No faces could be swapped")
-
-            # STEP 3B: Wait for all face swaps to complete, then composite
-            # STEP 3B: Wait for all face swaps to complete IN PARALLEL
-            loop = asyncio.get_event_loop()
-
-            # Wait for ALL swap tasks simultaneously (not one by one)
-            logger.info(f"Waiting for {len(valid_results)} face swaps in parallel")
-            async with aiohttp.ClientSession() as session:
-                swap_tasks = [
-                    asyncio.create_task(FaceSwapService.swap_face(
-                        session=session,
-                        child_photo_path=str(full_photo_path),
-                        character_crop_path=r['protagonist_crop']['cropped_path'],
-                        output_dir=str(swapped_images_dir)
-                    ))
-                    for r in valid_results
-                ]
-                swap_results = await asyncio.gather(*swap_tasks)
-
-            # Composite all images in parallel
-            logger.info(f"Compositing {len(valid_results)} images in parallel")
-            composite_tasks = [
-                loop.run_in_executor(
-                    None,
-                    FaceDetectionService.composite_face,
-                    valid_results[i]['img_path'],
-                    swap_results[i],
-                    valid_results[i]['protagonist_crop']['coordinates'],
-                    str(valid_results[i]['swapped_images_dir'] / f"swapped_{valid_results[i]['idx']}.jpg")
-                )
-                for i in range(len(valid_results))
-            ]
-            final_paths = await asyncio.gather(*composite_tasks)
-
-            # Build metadata
-            image_metadata = [
-                {
-                    'slide_idx': valid_results[i]['slide_idx'],
-                    'shape_id': valid_results[i]['shape_id'],
-                    'swapped_path': final_paths[i]
-                }
-                for i in range(len(valid_results))
-            ]
-            logger.info(f"Face swapping complete: {len(image_metadata)} images")
-
-
+            image_metadata = await PreviewGenerationService.process_and_swap_faces(
+                extracted_images=extracted_images,
+                averaged_reference=averaged_reference,
+                child_photo_path=full_photo_path,
+                swapped_images_dir=swapped_images_dir
+            )
             
-            # STEP 4: Replace swapped images back into customized PPTX
+            # STEP 5: Replace swapped images back into PPTX
             PPTXService.replace_images_in_pptx(
                 pptx_path=str(customized_pptx),
                 image_metadata=image_metadata,
@@ -263,7 +276,7 @@ class PreviewGenerationService:
             
             logger.info("Images replaced in PPTX")
             
-            # STEP 5: Convert customized PPTX to full-slide images
+            # STEP 6: Convert to slide images
             slides_dir = preview_dir / "slides"
             slide_images = PPTXService.convert_slides_to_images(
                 pptx_path=str(customized_pptx),
@@ -279,7 +292,7 @@ class PreviewGenerationService:
             
             logger.info(f"Generated {len(swapped_image_urls)} preview slide images")
             
-            # Update database with completed status
+            # Update database
             await PreviewRepository.update_status(
                 preview_id=preview_id,
                 status="completed",
@@ -292,7 +305,6 @@ class PreviewGenerationService:
         except Exception as e:
             logger.error(f"Preview generation failed: {e}", exc_info=True)
             
-            # Update database with failed status
             await PreviewRepository.update_status(
                 preview_id=preview_id,
                 status="failed",
