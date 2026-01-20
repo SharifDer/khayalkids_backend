@@ -6,7 +6,7 @@ import os
 
 from config import settings
 from database import Database
-from api import books, health, admin, previews
+from api import books, health, admin, previews, orders
 
 # Configure logging
 logging.basicConfig(
@@ -82,7 +82,7 @@ app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(books.router, prefix="/api", tags=["Books"])
 app.include_router(admin.router, prefix="/api", tags=["Admin"])
 app.include_router(previews.router, prefix="/api", tags=["Previews"])
-
+app.include_router(orders.router, prefix="/api" , tags=["Orders"])
 @app.get("/")
 async def root():
     return {
