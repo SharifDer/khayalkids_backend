@@ -115,11 +115,14 @@ class PreviewGenerationService:
         if not valid_results:
             raise ValueError("No faces could be swapped")
         
-        # STEP 2: Face swap in parallel
+        # STEP 2: Face swap in parallel with increased timeout
         loop = asyncio.get_event_loop()
         logger.info(f"Waiting for {len(valid_results)} face swaps in parallel")
         
-        async with aiohttp.ClientSession() as session:
+        # ✅ FIX: Create session with longer timeout (10 minutes)
+        timeout = aiohttp.ClientTimeout(total=600, connect=60, sock_read=600)
+        
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             swap_tasks = [
                 asyncio.create_task(FaceSwapService.swap_face(
                     session=session,
@@ -163,6 +166,7 @@ class PreviewGenerationService:
             await progress_callback(len(image_metadata))
         
         return image_metadata
+
 
     @staticmethod
     async def generate_preview(
