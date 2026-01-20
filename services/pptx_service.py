@@ -6,6 +6,10 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Optional
 from utils.profiler import profile
+import subprocess
+import platform
+import shutil
+
 logger = logging.getLogger(__name__)
 
 
@@ -264,3 +268,53 @@ class PPTXService:
         
         return count
 
+
+
+    @staticmethod
+    @profile
+    def convert_pptx_to_pdf(pptx_path: str, output_dir: str) -> str:
+        """Convert PPTX to PDF using LibreOffice"""
+                
+        os.makedirs(output_dir, exist_ok=True)
+        
+        system = platform.system()
+        
+        if system == "Windows":
+            soffice_cmd = shutil.which("soffice")
+            if not soffice_cmd:
+                common_paths = [
+                    r"C:\Program Files\LibreOffice\program\soffice.exe",
+                    r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+                ]
+                for path in common_paths:
+                    if os.path.exists(path):
+                        soffice_cmd = path
+                        break
+            if not soffice_cmd:
+                raise FileNotFoundError("LibreOffice not found")
+        else:
+            soffice_cmd = shutil.which("libreoffice") or shutil.which("soffice")
+            if not soffice_cmd:
+                raise FileNotFoundError("LibreOffice not found")
+        
+        try:
+            subprocess.run([
+                soffice_cmd,
+                "--headless",
+                "--convert-to", "pdf",
+                "--outdir", output_dir,
+                pptx_path
+            ], check=True, capture_output=True, text=True)
+            
+            pptx_basename = os.path.splitext(os.path.basename(pptx_path))[0]
+            pdf_path = os.path.join(output_dir, f"{pptx_basename}.pdf")
+            
+            if not os.path.exists(pdf_path):
+                raise FileNotFoundError(f"PDF not generated: {pdf_path}")
+            
+            logger.info(f"PDF generated: {pdf_path}")
+            return pdf_path
+            
+        except subprocess.CalledProcessError as e:
+            logger.error(f"PDF conversion failed: {e.stderr}")
+            raise
