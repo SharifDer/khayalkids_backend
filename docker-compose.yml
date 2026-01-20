@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  backend:
+    image: ghcr.io/SharifDer/khayalkids-backend:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/khayalkids/stories:/app/stories
+      - /var/khayalkids/data:/app/data
+      - /var/khayalkids/keys:/app/keys
