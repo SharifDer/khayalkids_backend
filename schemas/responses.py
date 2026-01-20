@@ -33,3 +33,21 @@ class PreviewStatusResponse(BaseModel):
     status: str  # "processing" | "completed" | "failed"
     preview_images_urls: Optional[List[str]] = None
     error_message: Optional[str] = None
+
+
+
+class CreateOrderResponse(BaseModel):
+    order_number: str
+    total_amount: float
+    message: str = "Order created successfully"
+
+
+class OrderStatusResponse(BaseModel):
+    order_number: str
+    order_status: str
+    payment_status: str
+    generation_status: str
+    characters_completed: int
+    estimated_time_minutes: int
+    final_pdf_url: Optional[str] = None
+    error_message: Optional[str] = None
