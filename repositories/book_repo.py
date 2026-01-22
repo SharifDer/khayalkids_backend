@@ -35,16 +35,27 @@ class BookRepository:
             return [Path(reference_field)]
     
     @staticmethod
-    async def get_all_active() -> List[BookResponse]:
-        """Get all active books with optional filters"""
+    async def get_all_active(limit_per_gender: Optional[int] = None) -> List[BookResponse]:
+        """Get all active books with optional limit per gender"""
         
-        query = "SELECT * FROM books WHERE is_active = 1"
-        params = []    
-        query += " ORDER BY created_at DESC"
-        
-        rows = await Database.fetch_all(query, tuple(params))
+        if limit_per_gender is None:
+            # Return all books
+            query = "SELECT * FROM books WHERE is_active = 1 ORDER BY created_at ASC"
+            rows = await Database.fetch_all(query)
+        else:
+            # Return first N books per gender
+            query = """
+                SELECT * FROM (
+                    SELECT *, ROW_NUMBER() OVER (PARTITION BY gender ORDER BY created_at ASC) as rn
+                    FROM books 
+                    WHERE is_active = 1
+                ) WHERE rn <= ?
+                ORDER BY gender, created_at ASC
+            """
+            rows = await Database.fetch_all(query, (limit_per_gender,))
         
         return [BookRepository._row_to_response(row) for row in rows]
+
     
     @staticmethod
     async def get_by_id(book_id: int) -> Optional[BookDetailResponse]:
@@ -67,6 +78,7 @@ class BookRepository:
             description=row['description'],
             age_range=row['age_range'],
             price=row['price'],
+            gender=row["gender"],
             cover_image_url=f"/{row['cover_image_path']}" if row['cover_image_path'] else None
         )
     
@@ -98,6 +110,7 @@ class BookRepository:
             description=row['description'],
             age_range=row['age_range'],
             price=row['price'],
+            gender=row["gender"],
             cover_image_url=f"/{row['cover_image_path']}" if row['cover_image_path'] else None,
             hero_name=row["hero_name"],
             character_reference_image_url=character_references, 
