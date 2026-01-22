@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 
 
@@ -14,6 +14,7 @@ class BookResponse(BaseModel):
     description: Optional[str] = None
     age_range: Optional[str] = None
     price: float
+    gender: Literal["male", "female"] 
     cover_image_url: Optional[str] = None
   
     
