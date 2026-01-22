@@ -9,12 +9,15 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/get_books", response_model=List[BookResponse])
-async def get_books():
+async def get_books(limit_per_gender: Optional[int] = None):
     """
-    Get all active books 
+    Get all active books, optionally limited per gender
+    
+    Args:
+        limit_per_gender: If provided, returns first N books per gender (e.g., 3)
     """
     try:
-        books = await BookRepository.get_all_active()
+        books = await BookRepository.get_all_active(limit_per_gender=limit_per_gender)
         return books
     except Exception as e:
         logger.error(f"Error fetching books: {e}")
