@@ -15,13 +15,13 @@ class BookResponse(BaseModel):
     age_range: Optional[str] = None
     price: float
     cover_image_url: Optional[str] = None
-    hero_name : str
-    character_reference_image_url : str
-
+  
+    
 
 class BookDetailResponse(BookResponse):
+    hero_name : str
+    character_reference_image_url : List[str] = Field(default_factory=list)
     preview_images_urls: List[str] = Field(default_factory=list)
-
 
 class PreviewResponse(BaseModel):
     preview_token: str
