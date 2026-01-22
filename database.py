@@ -107,7 +107,7 @@ class Database:
                 age_range TEXT,
                 price REAL NOT NULL,
                 template_path TEXT NOT NULL,
-                gender TEXT NOT NULL,
+                gender TEXT NOT NULL CHECK (gender IN ('male', 'female')),
                 cover_image_path TEXT,
                 hero_name TEXT NOT NULL,
                 character_reference_image_url TEXT NOT NULL, 
