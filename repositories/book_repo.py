@@ -79,12 +79,18 @@ class BookRepository:
         if row['preview_images']:
             try:
                 preview_paths = json.loads(row['preview_images'])
-                preview_images = [
-                     f"/{path}" 
-                    for path in preview_paths
-                ]
+                preview_images = [f"/{path}" for path in preview_paths]
             except json.JSONDecodeError:
                 logger.warning(f"Invalid preview_images JSON for book {row['id']}")
+        
+        # Parse character reference images JSON
+        character_references = []
+        if row['character_reference_image_url']:
+            try:
+                reference_paths = json.loads(row['character_reference_image_url'])
+                character_references = [f"/{path}" for path in reference_paths]
+            except json.JSONDecodeError:
+                logger.warning(f"Invalid character_reference_image_url JSON for book {row['id']}")
         
         return BookDetailResponse(
             id=row['id'],
@@ -94,9 +100,10 @@ class BookRepository:
             price=row['price'],
             cover_image_url=f"/{row['cover_image_path']}" if row['cover_image_path'] else None,
             hero_name=row["hero_name"],
-            character_reference_image_url=row["character_reference_image_url"],
+            character_reference_image_url=character_references, 
             preview_images_urls=preview_images
         )
+
     
     @staticmethod
     async def create(book_data: dict) -> int:
