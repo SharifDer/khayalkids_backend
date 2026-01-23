@@ -53,20 +53,12 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
+            set -ex
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
-            
             sudo mkdir -p /var/khayalkids/stories /var/khayalkids/data /var/khayalkids/keys
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
-            
             echo '${{ secrets.FACEWOW_KEY_JSON }}' > /var/khayalkids/keys/facewow_key.json
-            
-            {
-              echo "=== Starting deployment at $(date) ==="
-              docker compose down
-              docker compose pull
-              docker compose up -d --force-recreate
-              docker compose ps
-              echo "=== Deployment complete at $(date) ==="
-            } 2>&1 | tee /tmp/deploy.log
-            
-            cat /tmp/deploy.log
+            docker compose down
+            docker compose pull
+            docker compose up -d --force-recreate
+            docker compose ps
