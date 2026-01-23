@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Literal
-from typing import Optional
+from typing import Optional, Literal
 class CreateBookRequest(BaseModel):
     title: str
     description: str
@@ -18,3 +17,15 @@ class CreateOrderRequest(BaseModel):
     customer_phone: Optional[str] = Field(None, max_length=20)
     shipping_address: Optional[str] = Field(None, max_length=500)
     shipping_country: Optional[str] = Field(None, max_length=2, description="ISO country code")
+
+
+
+
+
+class UpdateBookRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    age_range: Optional[str] = None
+    gender: Optional[Literal["male", "female"]] = None
+    price: Optional[float] = None
+    hero_name: Optional[str] = None
