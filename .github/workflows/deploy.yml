@@ -58,7 +58,7 @@ jobs:
 
             # Create facewow_key.json from GitHub secret
             echo '${{ secrets.FACEWOW_KEY_JSON }}' > /var/khayalkids/keys/facewow_key.json
-
+            docker compose down
             # Pull and run latest image
             docker compose pull
             docker compose up -d --remove-orphans
