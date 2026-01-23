@@ -60,5 +60,6 @@ jobs:
             echo '${{ secrets.FACEWOW_KEY_JSON }}' > /var/khayalkids/keys/facewow_key.json
             docker compose down || true
             docker compose pull
+            docker image prune -f
             docker compose up -d --force-recreate
             docker compose ps

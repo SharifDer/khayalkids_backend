@@ -49,11 +49,12 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          request_pty: true
           script: |
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
 
             # Stop and remove containers
-            docker compose down
+            docker compose down || true
 
             # DELETE AND RECREATE folders
             sudo rm -rf /var/khayalkids
@@ -65,4 +66,6 @@ jobs:
 
             # Pull and run
             docker compose pull
+            docker image prune -f
             docker compose up -d --force-recreate
+            docker compose ps
