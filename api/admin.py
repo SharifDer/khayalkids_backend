@@ -7,6 +7,9 @@ import shutil
 from pathlib import Path
 from typing import Optional
 from config import settings
+from typing import Annotated, Any
+from pydantic import BeforeValidator
+from pydantic.json_schema import SkipJsonSchema
 
 import logging
 
@@ -76,78 +79,94 @@ async def create_book(
     }
 
 
+
+def empty_str_to_none(v: Any) -> Any:
+    if v == "" or v == ["string"] or (isinstance(v, list) and len(v) == 1 and v[0] == "string"):
+        return None
+    return v
+
 @router.patch("/admin/books/{book_id}")
 async def update_book(
     book_id: int,
     book: UpdateBookRequest = Depends(),
-    template_file: Optional[UploadFile] = File(None),
-    cover_image: Optional[UploadFile] = File(None),
-    character_reference_images: Optional[list[UploadFile]] = File(None),
-    preview_images: Optional[list[UploadFile]] = File(None)
+    template_file: Annotated[UploadFile | SkipJsonSchema[None], BeforeValidator(empty_str_to_none), File()] = None,
+    cover_image: Annotated[UploadFile | SkipJsonSchema[None], BeforeValidator(empty_str_to_none), File()] = None,
+    character_reference_images: Annotated[list[UploadFile] | SkipJsonSchema[None], BeforeValidator(empty_str_to_none), File()] = None,
+    preview_images: Annotated[list[UploadFile] | SkipJsonSchema[None], BeforeValidator(empty_str_to_none), File()] = None
 ):
-    # Check book exists
+    """
+    UPDATES (overwrites value in DB):
+    title, description, age_range, gender, price, hero_name
+
+    Only if provided in request
+
+    REPLACES (deletes old files + saves new):
+    character_reference_images: Deletes ALL reference_*.png, creates new reference_1.png, reference_2.png, etc.
+
+    preview_images: Deletes entire previews/ folder, creates new page_1.jpg, page_2.jpg, etc.
+
+    OVERWRITES (replaces file content, same filename):
+    template_file: Overwrites story.pptx
+
+    cover_image: Overwrites cover.jpg
+    """
     existing = await BookRepository.get_by_id(book_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Book not found")
     
     base_path = f"{settings.TEMPLATES_DIR}/story_{book_id}"
     previews_path = f"{base_path}/previews"
-    
     updates = {}
     
-    # Handle metadata
+    # Metadata
     metadata = book.dict(exclude_none=True)
     if metadata:
         updates.update(metadata)
     
-    # Handle template file
+    # Template
     if template_file:
         template_path = f"{base_path}/story.pptx"
         with open(template_path, "wb") as f:
             shutil.copyfileobj(template_file.file, f)
         updates['template_path'] = template_path
     
-    # Handle cover image
+    # Cover
     if cover_image:
         cover_path = f"{base_path}/cover.jpg"
         with open(cover_path, "wb") as f:
             shutil.copyfileobj(cover_image.file, f)
         updates['cover_image_path'] = cover_path
     
-    # Handle character references
+    # Character references
     if character_reference_images:
-        # Delete old references
         for old_file in Path(base_path).glob("reference_*.png"):
             old_file.unlink()
-        
-        # Save new ones
         reference_paths = []
         for i, ref_image in enumerate(character_reference_images, start=1):
             reference_path = f"{base_path}/reference_{i}.png"
             with open(reference_path, "wb") as f:
                 shutil.copyfileobj(ref_image.file, f)
             reference_paths.append(reference_path)
-        
         updates['character_reference_image_url'] = json.dumps(reference_paths)
     
-    # Handle preview images
+    # Preview images
     if preview_images:
-        # Delete old previews
         if os.path.exists(previews_path):
-            shutil.rmtree(previews_path)
+            for old_file in Path(previews_path).glob("*"):
+                try:
+                    old_file.unlink()
+                except PermissionError:
+                    pass
         os.makedirs(previews_path, exist_ok=True)
         
-        # Save new ones
         preview_paths = []
         for i, image in enumerate(preview_images, start=1):
             path = f"{previews_path}/page_{i}.jpg"
             with open(path, "wb") as f:
                 shutil.copyfileobj(image.file, f)
             preview_paths.append(f"{base_path}/previews/page_{i}.jpg")
-        
         updates['preview_images'] = json.dumps(preview_paths)
     
-    # Update database
     if updates:
         await BookRepository.update(book_id, updates)
     
