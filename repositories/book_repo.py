@@ -170,3 +170,15 @@ class BookRepository:
                 book_id
             )
         )
+    @staticmethod
+    async def update(book_id: int, updates: dict):
+        """Update book fields dynamically"""
+        if not updates:
+            return
+        
+        # Build dynamic query
+        fields = ", ".join([f"{key} = ?" for key in updates.keys()])
+        query = f"UPDATE books SET {fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        
+        params = tuple(updates.values()) + (book_id,)
+        await Database.execute(query, params)
