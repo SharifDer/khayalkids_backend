@@ -61,4 +61,4 @@ jobs:
             docker compose down
             # Pull and run latest image
             docker compose pull
-            docker compose up -d --remove-orphans
+            docker compose up -d --force-recreate
