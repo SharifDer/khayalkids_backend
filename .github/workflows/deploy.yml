@@ -52,13 +52,13 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          request_pty: true
           script: |
-            set -ex
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
             sudo mkdir -p /var/khayalkids/stories /var/khayalkids/data /var/khayalkids/keys
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
             echo '${{ secrets.FACEWOW_KEY_JSON }}' > /var/khayalkids/keys/facewow_key.json
-            docker compose down
+            docker compose down || true
             docker compose pull
             docker compose up -d --force-recreate
             docker compose ps
