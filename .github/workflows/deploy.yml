@@ -2,6 +2,9 @@ name: Deploy Backend
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+    - main
 
 jobs:
   build-and-deploy:
@@ -49,7 +52,6 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          debug: true                    # ADD THIS LINE
           script: |
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
             
@@ -58,10 +60,13 @@ jobs:
             
             echo '${{ secrets.FACEWOW_KEY_JSON }}' > /var/khayalkids/keys/facewow_key.json
             
-            docker compose down
-            docker compose pull
-            docker compose up -d --force-recreate
+            {
+              echo "=== Starting deployment at $(date) ==="
+              docker compose down
+              docker compose pull
+              docker compose up -d --force-recreate
+              docker compose ps
+              echo "=== Deployment complete at $(date) ==="
+            } 2>&1 | tee /tmp/deploy.log
             
-            echo "=== Deployment verification ==="     # ADD THIS
-            docker compose ps                          # ADD THIS
-            docker compose logs --tail=5               # ADD THIS
+            cat /tmp/deploy.log
