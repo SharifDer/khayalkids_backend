@@ -1,6 +1,6 @@
 # API endpoint for preview generation
 from fastapi import APIRouter, UploadFile, File, Form, BackgroundTasks, HTTPException
-from typing import Optional
+from utils.file_utils import validate_uploaded_photo
 import logging
 import secrets
 from datetime import datetime, timedelta
@@ -47,15 +47,22 @@ async def create_preview(
         from utils.file_utils import save_upload_file
         photo_path = await save_upload_file(photo, content, preview_token)
         
+        is_valid, error_message = validate_uploaded_photo(photo_path)
         # Create preview record in database
         preview_id = await PreviewRepository.create_preview(
             book_id=book_id,
             preview_token=preview_token,
             child_name=child_name,
             original_photo_path=photo_path,
-            expires_at=datetime.utcnow() + timedelta(hours=24)
+            expires_at=datetime.utcnow() + timedelta(days=7)
         )
-        
+        if not is_valid:
+            await PreviewRepository.update_status(
+                preview_id=preview_id,
+                status="failed",
+                error_message=error_message
+            )
+            raise HTTPException(status_code=400, detail=error_message)
         # Start background processing
         background_tasks.add_task(
             PreviewGenerationService.generate_preview,
