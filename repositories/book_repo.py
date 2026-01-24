@@ -14,25 +14,18 @@ class BookRepository:
     @staticmethod
     def parse_reference_paths(book_record) -> List[Path]:
         """
-        Parse character_reference_image_url from database
-        Supports both old format (single string) and new format (JSON array)
+        Parse character_reference_image_url from BookDetailResponse
+        Field is already a list of paths (parsed in _row_to_detail_response)
         """
         reference_field = book_record.character_reference_image_url
         
         if not reference_field:
             return []
         
-        # Try to parse as JSON array
-        try:
-            paths = json.loads(reference_field)
-            if isinstance(paths, list):
-                return [Path(p) for p in paths if p]
-            else:
-                # Single path wrapped in JSON string
-                return [Path(paths)]
-        except (json.JSONDecodeError, TypeError):
-            # Backward compatibility: old format was plain string
-            return [Path(reference_field)]
+        if isinstance(reference_field, list):
+            return [Path(p.lstrip('/')) for p in reference_field if p]
+        return []
+
     
     @staticmethod
     async def get_all_active(limit_per_gender: Optional[int] = None) -> List[BookResponse]:
