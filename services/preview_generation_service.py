@@ -49,7 +49,7 @@ class PreviewGenerationService:
             
             width, height = await loop.run_in_executor(None, check_image_size)
             
-            if width < 250 or height < 250:
+            if width < 350 or height < 350:
                 logger.info(f"⚡ Skipping small decorative image ({width}x{height})")
                 return None
             
