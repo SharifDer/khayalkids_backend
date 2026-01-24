@@ -4,7 +4,7 @@ WORKDIR /app
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Enable contrib repository and install Microsoft fonts
+# Enable contrib repository
 RUN echo "deb http://deb.debian.org/debian trixie main contrib" > /etc/apt/sources.list && \
     echo "deb http://deb.debian.org/debian trixie-updates main contrib" >> /etc/apt/sources.list && \
     echo "deb http://deb.debian.org/debian-security trixie-security main contrib" >> /etc/apt/sources.list && \
@@ -14,13 +14,14 @@ RUN echo "deb http://deb.debian.org/debian trixie main contrib" > /etc/apt/sourc
     poppler-utils \
     fontconfig \
     ttf-mscorefonts-installer \
+    fonts-wine \
     && fc-cache -f -v \
     && rm -rf /var/lib/apt/lists/*
 
-# VERIFY fonts are installed (build will FAIL if not)
-RUN fc-list | grep -i "times new roman" && \
-    fc-list | grep -i "tahoma" || \
-    (echo "ERROR: Required fonts not installed!" && exit 1)
+# VERIFY fonts installed
+RUN fc-list | grep -q -i "times new roman" && \
+    fc-list | grep -q -i "tahoma" || \
+    (echo "ERROR: Required fonts missing!" && exit 1)
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
