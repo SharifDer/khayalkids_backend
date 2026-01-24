@@ -4,7 +4,6 @@ WORKDIR /app
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Enable contrib for Microsoft fonts
 RUN echo "deb http://deb.debian.org/debian trixie main contrib" > /etc/apt/sources.list && \
     echo "deb http://deb.debian.org/debian trixie-updates main contrib" >> /etc/apt/sources.list && \
     echo "deb http://deb.debian.org/debian-security trixie-security main contrib" >> /etc/apt/sources.list && \
@@ -17,10 +16,7 @@ RUN echo "deb http://deb.debian.org/debian trixie main contrib" > /etc/apt/sourc
     fonts-liberation \
     fonts-dejavu \
     fonts-noto-core \
-    fonts-noto-ui-core \
-    fonts-noto-arabic \
     fonts-hosny-amiri \
-    fonts-kacst \
     fonts-arabeyes \
     && fc-cache -f -v \
     && rm -rf /var/lib/apt/lists/*
