@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class PreviewGenerationService:
     
-    PREVIEW_PAGES_COUNT = 3  # First 3 slides for preview
+    PREVIEW_PAGES_COUNT = 4  # First 3 slides for preview
 
     @staticmethod
     async def _process_single_image(
