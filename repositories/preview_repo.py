@@ -16,23 +16,26 @@ class PreviewRepository:
         preview_token: str,
         child_name: str,
         original_photo_path: str,
-        expires_at: datetime
+        expires_at: datetime,
+        cartoon_photo_path: Optional[str] = None
     ) -> int:
         """Create new preview record"""
         query = """
             INSERT INTO previews (
                 book_id, preview_token, child_name, original_photo_path, 
-                preview_status, expires_at
-            ) VALUES (?, ?, ?, ?, 'processing', ?)
+                cartoon_photo_path, preview_status, expires_at
+            ) VALUES (?, ?, ?, ?, ?, 'processing', ?)
         """
         
         async with Database.connection() as conn:
             cursor = await conn.execute(
                 query,
-                (book_id, preview_token, child_name, original_photo_path, expires_at.isoformat())
+                (book_id, preview_token, child_name, original_photo_path, 
+                 cartoon_photo_path, expires_at.isoformat())
             )
             await conn.commit()
             return cursor.lastrowid
+
     
     @staticmethod
     async def get_by_token(preview_token: str) -> Optional[Dict[str, Any]]:
@@ -57,14 +60,16 @@ class PreviewRepository:
         preview_id: int,
         status: str,
         swapped_images_paths: Optional[list] = None,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
+        cartoon_photo_path: Optional[str] = None
     ):
         """Update preview status and results"""
         query = """
             UPDATE previews 
             SET preview_status = ?, 
                 swapped_images_paths = ?,
-                error_message = ?
+                error_message = ?,
+                cartoon_photo_path = ?
             WHERE id = ?
         """
         
@@ -72,7 +77,7 @@ class PreviewRepository:
         
         await Database.execute(
             query,
-            (status, images_json, error_message, preview_id)
+            (status, images_json, error_message, cartoon_photo_path, preview_id)
         )
         
         logger.info(f"Preview {preview_id} status updated to: {status}")
