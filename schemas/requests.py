@@ -11,12 +11,20 @@ class CreateBookRequest(BaseModel):
 
 class CreateOrderRequest(BaseModel):
     preview_token: str = Field(..., description="Preview token from successful preview generation")
-    child_age: Optional[int] = Field(None, ge=0, le=18, description="Child's age")
     customer_name: str = Field(..., min_length=2, max_length=100)
-    customer_email: EmailStr
-    customer_phone: Optional[str] = Field(None, max_length=20)
-    shipping_address: Optional[str] = Field(None, max_length=500)
-    shipping_country: Optional[str] = Field(None, max_length=2, description="ISO country code")
+    customer_email: Optional[EmailStr] = None  
+    customer_phone: str = Field(..., max_length=20)  
+    shipping_address: str = Field(..., max_length=500)
+    shipping_country: str = Field(description="ISO country code") 
+    national_address_code: Optional[str] = Field(
+        None, 
+        min_length=8, 
+        max_length=8,
+        description="Saudi National Address Short Code (8 characters)"
+    )  
+    display_currency: str = Field(default="SAR", max_length=3)
+    display_amount: float
+
 
 
 

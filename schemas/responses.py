@@ -40,8 +40,8 @@ class PreviewStatusResponse(BaseModel):
 class CreateOrderResponse(BaseModel):
     order_number: str
     total_amount: float
-    message: str = "Order created successfully"
-
+    currency: str
+    message: str 
 
 class OrderStatusResponse(BaseModel):
     order_number: str
