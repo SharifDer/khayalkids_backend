@@ -14,6 +14,7 @@ from utils.profiler import save_timings
 from typing import Optional, List, Dict
 import asyncio
 import aiohttp
+from services.cartoonification_service import CartoonificationService
 
 
 logger = logging.getLogger(__name__)
@@ -215,7 +216,14 @@ class PreviewGenerationService:
             
             # Child photo path
             full_photo_path = photo_path
-            
+            cartoon_photo_path = preview_dir / "cartoon_photo.jpg"
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                CartoonificationService.cartoonify_photo,
+                full_photo_path,
+                str(cartoon_photo_path)
+            )
+            logger.info(f"Photo cartoonified: {cartoon_photo_path}")
             # STEP 1: Copy template and customize text
             customized_pptx = preview_dir / "customized.pptx"
             PPTXService.replace_text_in_pptx(
@@ -267,9 +275,10 @@ class PreviewGenerationService:
             image_metadata = await PreviewGenerationService.process_and_swap_faces(
                 extracted_images=extracted_images,
                 averaged_reference=averaged_reference,
-                child_photo_path=full_photo_path,
+                child_photo_path=str(cartoon_photo_path), 
                 swapped_images_dir=swapped_images_dir
             )
+
             
             # STEP 5: Replace swapped images back into PPTX
             PPTXService.replace_images_in_pptx(
@@ -300,8 +309,10 @@ class PreviewGenerationService:
             await PreviewRepository.update_status(
                 preview_id=preview_id,
                 status="completed",
-                swapped_images_paths=swapped_image_urls
+                swapped_images_paths=swapped_image_urls,
+                cartoon_photo_path=str(cartoon_photo_path)
             )
+
             
             logger.info(f"Preview generation completed: {preview_token}")
             save_timings(preview_token=preview_token)
