@@ -3,7 +3,7 @@ from database import Database
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 import logging
-
+from schemas.requests import CreateOrderRequest
 logger = logging.getLogger(__name__)
 
 
@@ -33,12 +33,7 @@ class OrderRepository:
         book_id: int,
         preview_id: int,
         child_name: str,
-        child_age: Optional[int],
-        customer_name: str,
-        customer_email: str,
-        customer_phone: Optional[str],
-        shipping_address: Optional[str],
-        shipping_country: Optional[str],
+        order_request: CreateOrderRequest,
         total_amount: float
     ) -> Dict[str, Any]:
         """Create new order record"""
@@ -46,20 +41,28 @@ class OrderRepository:
         
         query = """
             INSERT INTO orders (
-                book_id, preview_id, order_number, child_name, child_age,
+                book_id, preview_id, order_number, child_name,
                 customer_name, customer_email, customer_phone,
-                shipping_address, shipping_country, total_amount,
-                payment_status, order_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'received')
+                shipping_address, shipping_country, national_address_code,
+                total_amount, display_currency, display_amount,
+                payment_status, payment_method, order_status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'cod', 'received')
         """
         
         async with Database.connection() as conn:
             cursor = await conn.execute(
                 query,
                 (
-                    book_id, preview_id, order_number, child_name, child_age,
-                    customer_name, customer_email, customer_phone,
-                    shipping_address, shipping_country, total_amount
+                    book_id, preview_id, order_number, child_name,
+                    order_request.customer_name, 
+                    order_request.customer_email, 
+                    order_request.customer_phone,
+                    order_request.shipping_address, 
+                    order_request.shipping_country, 
+                    order_request.national_address_code,
+                    total_amount,
+                    order_request.display_currency, 
+                    order_request.display_amount,   
                 )
             )
             await conn.commit()
@@ -71,6 +74,7 @@ class OrderRepository:
             'id': order_id,
             'order_number': order_number
         }
+
     
     @staticmethod
     async def get_by_order_number(order_number: str) -> Optional[Dict[str, Any]]:
