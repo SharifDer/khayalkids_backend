@@ -23,11 +23,64 @@ class Settings(BaseSettings):
     
     # CORS
     ALLOWED_ORIGINS: str = "*"
+    SEGMIND_API_KEY: str = ""
+    PRICING_CONFIG = {
+        "SAR": {
+            "rate": 1.0,
+            "adjustment": 0
+        },
+        "YER": {
+            "rate": 140.0,
+            "adjustment": -30  
+        }
+    }
     
-    # API Keys (loaded from JSON)
-    FACESWAPPING_API: str = ""
-    STRIPE_SECRET_KEY: str = ""
-    STRIPE_WEBHOOK_SECRET: str = ""
+    nano_banana_cartoon_prompt : str = """
+    Convert the provided child photo into a storybook-style illustrated portrait suitable for high-quality children’s book illustrations.
+        PRIMARY GOAL
+
+        Preserve the child’s exact facial identity while rendering them in a semi-realistic storybook illustration style.
+        IDENTITY (HIGHEST PRIORITY)
+
+        Preserve exact facial structure: eye shape and spacing, nose shape, mouth shape, cheeks, jawline.
+
+        Do not generalize, average, beautify, or stylize facial features.
+
+        The result must clearly be the same child.
+        STYLE REQUIREMENTS
+
+        Semi-realistic children’s storybook illustration.
+
+        Soft volumetric lighting.
+
+        Gentle gradients and depth.
+
+        Illustrated (not photographic) skin shading.
+
+        Painterly but controlled.
+
+        No flat or vector look.
+
+        No avatar or sticker appearance.
+        HAIR REQUIREMENTS
+
+        Preserve the child’s real hairstyle, hairline, volume, and direction.
+
+        Render hair with illustrated depth and soft strand definition.
+
+        Do not invent or modify the hairstyle.
+        BACKGROUND
+
+        Clean, simple, neutral, softly blurred or solid pastel background.
+
+        No objects, scenery, textures, or visual noise.
+        FORBIDDEN
+
+        Flat cartoon style, vector art, avatar style, sticker look, anime, exaggerated Pixar or Disney features, simplified facial features, generic child face, face averaging, beauty filters, artistic reinterpretation of identity.
+        OUTPUT
+
+        A clean, identity-accurate, storybook-quality illustrated portrait that can seamlessly blend into semi-realistic children’s book illustrations.
+        """
     
     class Config:
         extra = "allow"
@@ -35,12 +88,12 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
-        # Load face swapping API key
-        faceswap_key_file = Path("keys/facewow_key.json")
-        with open(faceswap_key_file) as f:
-            data = json.load(f)
-            self.FACESWAPPING_API = data.get("FaceWow_Api", "")
-    
-   
+        # Load Segmind API key
+        segmind_key_file = Path("keys/segmind_key.json")
+        if segmind_key_file.exists():
+            with open(segmind_key_file) as f:
+                data = json.load(f)
+                self.SEGMIND_API_KEY = data.get("api_key", "")
+       
 
 settings = Settings()
