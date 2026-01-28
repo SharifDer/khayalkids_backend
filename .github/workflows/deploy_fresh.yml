@@ -62,7 +62,7 @@ jobs:
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
 
             # Create facewow_key.json
-            echo '${{ secrets.FACEWOW_KEY_JSON }}' > /var/khayalkids/keys/facewow_key.json
+            echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
 
             # Pull and run
             docker compose pull

@@ -57,7 +57,7 @@ jobs:
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
             sudo mkdir -p /var/khayalkids/stories /var/khayalkids/data /var/khayalkids/keys
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
-            echo '${{ secrets.FACEWOW_KEY_JSON }}' > /var/khayalkids/keys/facewow_key.json
+            echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
             docker compose down || true
             docker compose pull
             docker image prune -f
