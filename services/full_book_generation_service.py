@@ -121,7 +121,7 @@ class FullBookGenerationService:
             averaged_reference = np.mean(reference_embeddings, axis=0)
             
             # STEP 6: Process and swap faces using SHARED METHOD
-            child_photo_path = preview['original_photo_path']
+            child_photo_path = preview['cartoon_photo_path']
             
             # Progress callback
             async def update_progress(completed_count):
