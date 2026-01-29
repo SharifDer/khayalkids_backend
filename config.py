@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from pydantic_settings import BaseSettings
-
+from typing import Dict, Any
 
 class Settings(BaseSettings):
     # Database
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: str = "*"
     SEGMIND_API_KEY: str = ""
-    PRICING_CONFIG = {
+    PRICING_CONFIG : Dict[str, Dict[str,float]]= {
         "SAR": {
             "rate": 1.0,
             "adjustment": 0
@@ -34,7 +34,10 @@ class Settings(BaseSettings):
             "adjustment": -30  
         }
     }
-    
+    TWILIO_ACCOUNT_SID : str = ""
+    TWILIO_AUTH_TOKEN : str = "" 
+    TWILIO_WHATSAPP_FROM : str = ""
+    FRONTEND_BASE_URL : str = "https://khayalkids.com"
     nano_banana_cartoon_prompt : str = """
     Convert the provided child photo into a storybook-style illustrated portrait suitable for high-quality children’s book illustrations.
         PRIMARY GOAL
@@ -93,7 +96,14 @@ class Settings(BaseSettings):
         if segmind_key_file.exists():
             with open(segmind_key_file) as f:
                 data = json.load(f)
-                self.SEGMIND_API_KEY = data.get("api_key", "")
+                self.SEGMIND_API_KEY = data.get("api_key")
+        twilio_key_file = Path("keys/twilio_key.json")
+        if twilio_key_file.exists():
+            with open(twilio_key_file) as f:
+                data = json.load(f)
+                self.TWILIO_ACCOUNT_SID = data.get("account_sid")
+                self.TWILIO_AUTH_TOKEN = data.get("auth_token")
+                self.TWILIO_WHATSAPP_FROM = data.get("whatsapp_from")
        
 
 settings = Settings()
