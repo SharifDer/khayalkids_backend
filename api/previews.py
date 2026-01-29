@@ -9,6 +9,9 @@ from repositories.preview_repo import PreviewRepository
 from repositories.book_repo import BookRepository
 from services.preview_generation_service import PreviewGenerationService
 from schemas.responses import PreviewResponse, PreviewStatusResponse
+from schemas.requests import WhatsAppNotificationRequest
+from repositories.whatsapp_repo import WhatsAppRepository
+
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -114,3 +117,37 @@ async def get_preview_status(preview_token: str):
     except Exception as e:
         logger.error(f"Error fetching preview status: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch preview status")
+
+
+@router.post("/{preview_token}/whatsapp")
+async def add_whatsapp_for_notification(
+    preview_token: str,
+    request: WhatsAppNotificationRequest
+):
+    """
+    Save WhatsApp number to send notification when preview is ready.
+    Should only be called during preview processing phase.
+    """
+    # Verify preview exists
+    preview = await PreviewRepository.get_by_token(preview_token)
+    if not preview:
+        raise HTTPException(status_code=404, detail="Preview not found")
+    
+    # Check if already completed (optional validation)
+    if preview.get("preview_status") == "completed":
+        raise HTTPException(
+            status_code=400, 
+            detail="Preview already completed. Please use support icons to contact us."
+        )
+    
+    # Save contact using class method
+    await WhatsAppRepository.create_contact(
+        preview_token=preview_token,
+        book_id=request.book_id,
+        whatsapp_number=request.whatsapp_number
+    )
+    
+    return {
+        "message": "سنرسل لك رابط المعاينة على الواتساب عند الجاهزية",
+        "preview_token": preview_token
+    }
