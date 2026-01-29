@@ -100,6 +100,16 @@ class Database:
         """Create all database tables"""
         tables = [
             """
+            CREATE TABLE IF NOT EXISTS whatsapp_contacts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                preview_token TEXT NOT NULL,
+                book_id INTEGER NOT NULL,
+                whatsapp_number TEXT NOT NULL,
+                message_sent INTEGER DEFAULT 0,
+                submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            """,
+            """
             CREATE TABLE IF NOT EXISTS books (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
