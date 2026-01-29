@@ -25,11 +25,6 @@ class CreateOrderRequest(BaseModel):
     display_currency: str = Field(default="SAR", max_length=3)
     display_amount: float
 
-
-
-
-
-
 class UpdateBookRequest(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -37,3 +32,9 @@ class UpdateBookRequest(BaseModel):
     gender: Optional[Literal["male", "female"]] = None
     price: Optional[float] = None
     hero_name: Optional[str] = None
+
+
+
+class WhatsAppNotificationRequest(BaseModel):
+    book_id: int = Field(..., description="Book ID for generating shareable link")
+    whatsapp_number: str = Field( max_length=20, description="WhatsApp number with country code")
