@@ -15,7 +15,7 @@ from typing import Optional, List, Dict
 import asyncio
 import aiohttp
 from services.cartoonification_service import CartoonificationService
-from services.whatsapp_service import WhatsAppService
+from services.contact_service import ContactService
 
 logger = logging.getLogger(__name__)
 
@@ -312,7 +312,7 @@ class PreviewGenerationService:
                 swapped_images_paths=swapped_image_urls,
                 cartoon_photo_path=str(cartoon_photo_path)
             )
-            await WhatsAppService.send_notifications_for_preview(preview_token, book_id)
+            await ContactService.send_notifications_for_preview(preview_token, book_id)
             
             logger.info(f"Preview generation completed: {preview_token}")
             save_timings(preview_token=preview_token)

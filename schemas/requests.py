@@ -35,6 +35,6 @@ class UpdateBookRequest(BaseModel):
 
 
 
-class WhatsAppNotificationRequest(BaseModel):
+class ContactNotificationRequest(BaseModel):
     book_id: int = Field(..., description="Book ID for generating shareable link")
-    whatsapp_number: str = Field( max_length=20, description="WhatsApp number with country code")
+    phone_number: str = Field( max_length=20, description="Phone number with country code")

@@ -9,8 +9,8 @@ from repositories.preview_repo import PreviewRepository
 from repositories.book_repo import BookRepository
 from services.preview_generation_service import PreviewGenerationService
 from schemas.responses import PreviewResponse, PreviewStatusResponse
-from schemas.requests import WhatsAppNotificationRequest
-from repositories.whatsapp_repo import WhatsAppRepository
+from schemas.requests import ContactNotificationRequest
+from repositories.contact_repo import ContactRepository
 
 
 router = APIRouter()
@@ -119,13 +119,13 @@ async def get_preview_status(preview_token: str):
         raise HTTPException(status_code=500, detail="Failed to fetch preview status")
 
 
-@router.post("/{preview_token}/whatsapp")
-async def add_whatsapp_for_notification(
+@router.post("/{preview_token}/phone_number")
+async def add_contact_for_notification(
     preview_token: str,
-    request: WhatsAppNotificationRequest
+    request: ContactNotificationRequest
 ):
     """
-    Save WhatsApp number to send notification when preview is ready.
+    Save phone_number to send notification when preview is ready.
     Should only be called during preview processing phase.
     """
     # Verify preview exists
@@ -141,10 +141,10 @@ async def add_whatsapp_for_notification(
         )
     
     # Save contact using class method
-    await WhatsAppRepository.create_contact(
+    await ContactRepository.create_contact(
         preview_token=preview_token,
         book_id=request.book_id,
-        whatsapp_number=request.whatsapp_number
+        phone_number=request.phone_number
     )
     
     return {
