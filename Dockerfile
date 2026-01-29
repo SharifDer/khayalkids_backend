@@ -9,8 +9,8 @@ RUN echo "deb http://deb.debian.org/debian trixie main contrib" > /etc/apt/sourc
     echo "deb http://deb.debian.org/debian-security trixie-security main contrib" >> /etc/apt/sources.list && \
     echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | debconf-set-selections && \
     apt-get update && apt-get install -y \
-    libreoffice-writer-nogui \
-    libreoffice-impress-nogui \
+    libreoffice \
+    poppler-utils \
     fontconfig \
     ttf-mscorefonts-installer \
     fonts-liberation \
