@@ -38,7 +38,7 @@ class CartoonificationService:
                 "prompt": prompt,
                 "image_urls": [image_url],
                 "aspect_ratio": "1:1",
-                "output_resolution": "4K",
+                "output_resolution": "1K",
                 "output_format": "jpg"
             }
             
