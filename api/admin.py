@@ -111,6 +111,13 @@ async def update_book(
 
     cover_image: Overwrites cover.jpg
     """
+    print(f"=== DEBUG UPDATE BOOK {book_id} ===")
+    print(f"cover_image: {cover_image}")
+    print(f"cover_image type: {type(cover_image)}")
+    if cover_image:
+        print(f"cover_image.filename: {cover_image.filename}")
+        print(f"cover_image.size: {cover_image.size}")
+    print("================================")
     existing = await BookRepository.get_by_id(book_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Book not found")

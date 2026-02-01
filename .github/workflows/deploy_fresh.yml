@@ -49,7 +49,6 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          request_pty: true
           script: |
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
 
@@ -63,9 +62,9 @@ jobs:
 
             # Create facewow_key.json
             echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
+            echo '${{ secrets.TWILIO_KEY }}' > /var/khayalkids/keys/twilio_key.json
 
-            # Pull and run
             docker compose pull
-            docker image prune -f
             docker compose up -d --force-recreate
+            docker image prune -a -f
             docker compose ps
