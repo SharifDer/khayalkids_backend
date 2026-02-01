@@ -119,7 +119,7 @@ async def update_book(
         print(f"cover_image.size: {cover_image.size}")
     print("================================")
     existing = await BookRepository.get_by_id(book_id)
-    if not existing:
+    if  existing:
         raise HTTPException(status_code=404, detail="Book not found")
     
     base_path = f"{settings.TEMPLATES_DIR}/story_{book_id}"
