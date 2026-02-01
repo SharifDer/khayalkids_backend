@@ -6,6 +6,9 @@ import logging
 import cv2
 import numpy as np
 from config import settings
+from PIL import Image
+import io
+from fastapi import UploadFile
 
 logger = logging.getLogger(__name__)
 
@@ -87,3 +90,26 @@ def validate_uploaded_photo(photo_path: str) -> tuple[bool, str]:
     except Exception as e:
         logger.error(f"Validation error: {e}", exc_info=True)
         return False, "خطأ في معالجة الصورة. تأكد من صيغة الملف"
+
+
+
+def compress_image(upload_file: UploadFile, max_width: int = 1000, quality: int = 90) -> bytes:
+    """
+    Compress image to max_width with quality setting.
+    Quality 90: Near-perfect visual quality, ~200-250KB for book covers
+    """
+    # Read uploaded file
+    image_data = upload_file.file.read()
+    img = Image.open(io.BytesIO(image_data))
+    
+    if img.width > max_width:
+        ratio = max_width / img.width
+        new_height = int(img.height * ratio)
+        img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+    
+    if img.mode in ('RGBA', 'P'):
+        img = img.convert('RGB')
+
+    buffer = io.BytesIO()
+    img.save(buffer, format='JPEG', quality=quality, optimize=True)
+    return buffer.getvalue()

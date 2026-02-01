@@ -5,12 +5,11 @@ from repositories.book_repo import BookRepository
 import os
 import shutil
 from pathlib import Path
-from typing import Optional
 from config import settings
 from typing import Annotated, Any
 from pydantic import BeforeValidator
 from pydantic.json_schema import SkipJsonSchema
-
+from utils.file_utils import compress_image
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,8 +41,9 @@ async def create_book(
 
     # حفظ الغلاف
     cover_path = f"{base_path}/cover.jpg"
+    cover_compressed = compress_image(cover_image, max_width=1000)
     with open(cover_path, "wb") as f:
-        shutil.copyfileobj(cover_image.file, f)
+         f.write(cover_compressed)
 
     # ✨ CHANGED: حفظ صور المرجع للشخصية (multiple files)
     reference_paths = []
@@ -60,8 +60,9 @@ async def create_book(
     preview_paths = []
     for i, image in enumerate(preview_images, start=1):
         path = f"{previews_path}/page_{i}.jpg"
+        preview_compressed = compress_image(image, max_width=1000)
         with open(path, "wb") as f:
-            shutil.copyfileobj(image.file, f)
+            f.write(preview_compressed)
         preview_paths.append(f"{base_path}/previews/page_{i}.jpg")
 
     # ✨ CHANGED: تحديث المسارات (pass list of references)
@@ -133,8 +134,9 @@ async def update_book(
     # Cover
     if cover_image:
         cover_path = f"{base_path}/cover.jpg"
+        cover_compressed = compress_image(cover_image, max_width=1000)
         with open(cover_path, "wb") as f:
-            shutil.copyfileobj(cover_image.file, f)
+            f.write(cover_compressed)
         updates['cover_image_path'] = cover_path
     
     # Character references
@@ -162,10 +164,10 @@ async def update_book(
         preview_paths = []
         for i, image in enumerate(preview_images, start=1):
             path = f"{previews_path}/page_{i}.jpg"
+            preview_compressed = compress_image(image, max_width=1000)
             with open(path, "wb") as f:
-                shutil.copyfileobj(image.file, f)
+                f.write(preview_compressed)
             preview_paths.append(f"{base_path}/previews/page_{i}.jpg")
-        updates['preview_images'] = json.dumps(preview_paths)
     
     if updates:
         await BookRepository.update(book_id, updates)
