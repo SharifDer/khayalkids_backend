@@ -61,7 +61,7 @@ jobs:
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
             echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
             echo '${{ secrets.TWILIO_KEY }}' > /var/khayalkids/keys/twilio_key.json
-            /usr/bin/docker compose pull
-            /usr/bin/docker compose up -d --force-recreate
-            /usr/bin/docker image prune -a -f
-            /usr/bin/docker compose ps
+            docker compose pull
+            docker compose up -d --force-recreate
+            docker image prune -a -f
+            docker compose ps
