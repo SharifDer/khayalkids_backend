@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID : str = ""
     TWILIO_AUTH_TOKEN : str = "" 
     TWILIO_NUMBER_FROM : str = ""
+    admin_password : str = ""
     FRONTEND_BASE_URL : str = "https://khayalkids.com"
     nano_banana_cartoon_prompt : str = """
     Convert the provided child photo into a storybook-style illustrated portrait suitable for high-quality children’s book illustrations.
@@ -104,6 +105,10 @@ class Settings(BaseSettings):
                 self.TWILIO_ACCOUNT_SID = data.get("account_sid")
                 self.TWILIO_AUTH_TOKEN = data.get("auth_token")
                 self.TWILIO_NUMBER_FROM = data.get("number_from")
-       
+        admin_password_file = Path("keys/admin.json")
+        with open(admin_password_file) as f:
+            data = json.load(f)
+            self.admin_password = data.get("admin_pass")
+                
 
 settings = Settings()
