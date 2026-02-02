@@ -20,12 +20,16 @@ router = APIRouter()
 
 @router.post("/admin/create_book")
 async def create_book(
+    admin_password : str,
     book: CreateBookRequest = Depends(),  
     template_file: UploadFile = File(...),
     cover_image: UploadFile = File(...),
     character_reference_images: list[UploadFile] = File(...), 
     preview_images: list[UploadFile] = File(...)
 ):
+    if admin_password != settings.admin_password:
+        logger.info("Non admin tried to make changes")
+        raise HTTPException(status_code=404, detail="Password is wrong, please make sure you are an admin and have the right password")
     
     book_id = await BookRepository.create(book.dict())
 
@@ -88,6 +92,7 @@ def empty_str_to_none(v: Any) -> Any:
 
 @router.patch("/admin/books/{book_id}")
 async def update_book(
+    admin_password : str,
     book_id: int,
     book: UpdateBookRequest = Depends(),
     template_file: Annotated[UploadFile | SkipJsonSchema[None], BeforeValidator(empty_str_to_none), File()] = None,
@@ -118,8 +123,11 @@ async def update_book(
         print(f"cover_image.filename: {cover_image.filename}")
         print(f"cover_image.size: {cover_image.size}")
     print("================================")
+    if admin_password != settings.admin_password:
+        logger.info("Non admin tried to make changes")
+        raise HTTPException(status_code=404, detail="Password is wrong, please make sure you are an admin and have the right password")
     existing = await BookRepository.get_by_id(book_id)
-    if  existing:
+    if not existing:
         raise HTTPException(status_code=404, detail="Book not found")
     
     base_path = f"{settings.TEMPLATES_DIR}/story_{book_id}"
