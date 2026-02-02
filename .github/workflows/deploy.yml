@@ -60,7 +60,7 @@ jobs:
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
             echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
             echo '${{ secrets.TWILIO_KEY }}' > /var/khayalkids/keys/twilio_key.json
-            docker pull ghcr.io/sharifder/khayalkids-backend:latest
-            docker compose up -d
+            docker compose pull
+            docker compose up -d --force-recreate
             docker image prune -a -f
             docker compose ps
