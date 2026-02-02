@@ -53,6 +53,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           debug: true
+          request_pty: true
           command_timeout: 30m
           script: |
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
