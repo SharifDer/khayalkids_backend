@@ -1,7 +1,7 @@
 name: Deploy Fresh (Clean Install)
 
 on:
-  workflow_dispatch:  # Manual trigger only
+  workflow_dispatch:  
 
 jobs:
   build-and-deploy:
@@ -49,10 +49,11 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          debug: true
+          request_pty: true
+          command_timeout: 15m
           script: |
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
-
-            # Stop and remove containers
             docker compose down || true
 
             # DELETE AND RECREATE folders
@@ -60,7 +61,6 @@ jobs:
             sudo mkdir -p /var/khayalkids/stories /var/khayalkids/data /var/khayalkids/keys
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
 
-            # Create facewow_key.json
             echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
             echo '${{ secrets.TWILIO_KEY }}' > /var/khayalkids/keys/twilio_key.json
 
