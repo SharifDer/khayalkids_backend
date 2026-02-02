@@ -52,7 +52,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          # request_pty: true
+          debug: true
           command_timeout: 30m
           script: |
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
@@ -60,7 +60,7 @@ jobs:
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
             echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
             echo '${{ secrets.TWILIO_KEY }}' > /var/khayalkids/keys/twilio_key.json
-            docker compose pull
-            docker compose up -d --pull always
+            docker pull ghcr.io/sharifder/khayalkids-backend:latest
+            docker compose up -d
             docker image prune -a -f
             docker compose ps
