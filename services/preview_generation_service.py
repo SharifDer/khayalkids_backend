@@ -10,7 +10,7 @@ from services.pptx_service import PPTXService
 from services.faceswap_service import FaceSwapService
 from services.face_detection_service import FaceDetectionService
 from config import settings
-from utils.profiler import save_timings
+
 from typing import Optional, List, Dict
 import asyncio
 import aiohttp
@@ -180,6 +180,8 @@ class PreviewGenerationService:
         """
         Preview generation workflow with multi-reference face matching
         """
+        from utils.profiler import start_session, end_session
+        start_session(preview_token, f"preview_{book_id}_{child_name}")
         try:
             logger.info(f"Starting preview generation for token: {preview_token}")
             
@@ -315,7 +317,7 @@ class PreviewGenerationService:
             await ContactService.send_notifications_for_preview(preview_token, book_id)
             
             logger.info(f"Preview generation completed: {preview_token}")
-            save_timings(preview_token=preview_token)
+            end_session(preview_token)
             
         except Exception as e:
             logger.error(f"Preview generation failed: {e}", exc_info=True)
@@ -325,4 +327,4 @@ class PreviewGenerationService:
                 status="failed",
                 error_message=str(e)
             )
-            save_timings(preview_token=preview_token)
+            end_session(preview_token)
