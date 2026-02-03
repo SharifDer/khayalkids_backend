@@ -30,10 +30,34 @@ class Settings(BaseSettings):
             "adjustment": 0
         },
         "YER": {
-            "rate": 140.0,
-            "adjustment": -30  
+        "rate": 140.0,
+        "adjustment": -30  
+        },
+        "AED": {
+            "rate": 0.98,
+            "adjustment": 0 
+        },
+        "QAR": {
+            "rate": 0.97,
+            "adjustment": 0 
+        },
+        "KWD": {
+            "rate": 0.082,
+            "adjustment": 0
+        },
+        "BHD": {
+            "rate": 0.1,
+            "adjustment": 0
+        },
+        "OMR": {
+            "rate": 0.103,
+            "adjustment": 0
+        },
+        "USD": {
+            "rate": 0.27,
+            "adjustment": 0
         }
-    }
+        }
     TWILIO_ACCOUNT_SID : str = ""
     TWILIO_AUTH_TOKEN : str = "" 
     TWILIO_NUMBER_FROM : str = ""
