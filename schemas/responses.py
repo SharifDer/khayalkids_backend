@@ -34,6 +34,11 @@ class PreviewStatusResponse(BaseModel):
     status: str  # "processing" | "completed" | "failed"
     preview_images_urls: Optional[List[str]] = None
     error_message: Optional[str] = None
+    child_name : Optional[str] = None
+    book_title : Optional[str] = None
+    book_description : Optional[str] = None
+    
+
 
 
 
