@@ -101,11 +101,11 @@ async def get_preview_status(preview_token: str):
  
         if not preview:
             raise HTTPException(status_code=404, detail="Preview not found")
-        book = BookRepository.get_by_id(preview["book_id"])
-        book_hero = book["her_name"]
+        book = await BookRepository.get_by_id(preview["book_id"])
+        book_hero = book.hero_name
         child_name = preview["child_name"]
-        book_title = personalize_text_with_child_name(book["title"], book_hero, child_name)
-        book_description = personalize_text_with_child_name(book["description"], book_hero, child_name)
+        book_title = personalize_text_with_child_name(book.title, book_hero, child_name)
+        book_description = personalize_text_with_child_name(book.description, book_hero, child_name)
         # Check if expired
         # if datetime.fromisoformat(preview['expires_at']) < datetime.utcnow():
         #     raise HTTPException(status_code=410, detail="Preview expired")
@@ -115,7 +115,8 @@ async def get_preview_status(preview_token: str):
             preview_images_urls=preview.get('swapped_images_paths'),
             error_message=preview.get('error_message'),
             book_title=book_title,
-            book_description=book_description
+            book_description=book_description,
+            child_name=child_name
         )
         
     except HTTPException:
