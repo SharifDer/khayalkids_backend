@@ -144,7 +144,8 @@ class PreviewGenerationService:
                 valid_results[i]['img_path'],
                 swap_results[i],
                 valid_results[i]['protagonist_crop']['coordinates'],
-                str(valid_results[i]['swapped_images_dir'] / f"swapped_{valid_results[i]['idx']}.jpg")
+                str(valid_results[i]['swapped_images_dir'] / f"swapped_{valid_results[i]['idx']}.jpg"),
+                valid_results[i]['protagonist_crop'].get('mask', None)
             )
             for i in range(len(valid_results))
         ]
