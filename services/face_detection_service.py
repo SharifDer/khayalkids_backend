@@ -213,8 +213,7 @@ class FaceDetectionService:
             logger.error(f"Face isolation error: {e}", exc_info=True)
             return None
 
-    
-    
+
     @staticmethod
     @profile
     def composite_face(
@@ -224,28 +223,41 @@ class FaceDetectionService:
         output_path: str
     ) -> str:
         """
-        Composite swapped face back into original image
+        Composite swapped face using OpenCV seamless cloning
         """
         try:
-            original = Image.open(original_image_path).convert('RGB')
-            swapped_face = Image.open(swapped_face_path).convert('RGB')
+            import cv2
             
+            # Load images
+            original = cv2.imread(original_image_path)
+            swapped_face = cv2.imread(swapped_face_path)
+            
+            # Resize swapped face to match coordinates
             crop_width = face_coordinates['right'] - face_coordinates['left']
             crop_height = face_coordinates['bottom'] - face_coordinates['top']
-            swapped_face = swapped_face.resize((crop_width, crop_height), Image.LANCZOS)
+            swapped_face_resized = cv2.resize(swapped_face, (crop_width, crop_height), 
+                                            interpolation=cv2.INTER_LANCZOS4)
             
-            mask = Image.new('L', (crop_width, crop_height), 255)
-            mask = mask.filter(ImageFilter.GaussianBlur(radius=8))
+            # Create binary mask (all white)
+            mask = np.full((crop_height, crop_width), 255, dtype=np.uint8)
             
-            original.paste(
-                swapped_face,
-                (face_coordinates['left'], face_coordinates['top']),
-                mask
+            # Calculate center point for seamless cloning
+            center_x = face_coordinates['left'] + crop_width // 2
+            center_y = face_coordinates['top'] + crop_height // 2
+            center = (center_x, center_y)
+            
+            # Seamless clone (MIXED_CLONE for best results with faces)
+            result = cv2.seamlessClone(
+                swapped_face_resized,  # src
+                original,              # dst
+                mask,                  # mask
+                center,                # center point
+                cv2.MIXED_CLONE       # flag
             )
             
-            original.save(output_path, 'JPEG', quality=95)
+            cv2.imwrite(output_path, result, [cv2.IMWRITE_JPEG_QUALITY, 95])
             
-            logger.info(f"Face composited: {output_path}")
+            logger.info(f"Face composited with seamless cloning: {output_path}")
             return output_path
             
         except Exception as e:
