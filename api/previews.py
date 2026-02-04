@@ -126,7 +126,7 @@ async def get_preview_status(preview_token: str):
         raise HTTPException(status_code=500, detail="Failed to fetch preview status")
 
 
-@router.post("previews/{preview_token}/phone_number")
+@router.post("/previews/{preview_token}/phone_number")
 async def add_contact_for_notification(
     preview_token: str,
     request: ContactNotificationRequest
@@ -140,12 +140,12 @@ async def add_contact_for_notification(
     if not preview:
         raise HTTPException(status_code=404, detail="Preview not found")
     
-    # Check if already completed (optional validation)
-    if preview.get("preview_status") == "completed":
-        raise HTTPException(
-            status_code=400, 
-            detail="Preview already completed. Please use support icons to contact us."
-        )
+    # # Check if already completed (optional validation)
+    # if preview.get("preview_status") == "completed":
+    #     raise HTTPException(
+    #         status_code=400, 
+    #         detail="Preview already completed. Please use support icons to contact us."
+    #     )
     
     # Save contact using class method
     await ContactRepository.create_contact(
