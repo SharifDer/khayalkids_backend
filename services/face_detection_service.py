@@ -9,7 +9,7 @@ from typing import Optional, Dict
 from PIL import Image, ImageFilter
 from utils.profiler import profile
 from ultralytics import YOLO
-
+import uuid
 logger = logging.getLogger(__name__)
 
 
@@ -23,7 +23,9 @@ class FaceDetectionService:
     def _get_yolo_model():
         """Lazy load and cache YOLO model"""
         if FaceDetectionService._yolo_model is None:
-            FaceDetectionService._yolo_model = YOLO('yolov8n-seg.pt')
+            model = YOLO('yolov8n-seg.pt')
+            model.model.fuse = lambda verbose=True: model.model
+            FaceDetectionService._yolo_model = model
             logger.info("✅ YOLOv8n-seg model loaded and cached")
         return FaceDetectionService._yolo_model
     
@@ -108,7 +110,7 @@ class FaceDetectionService:
     @profile
     def isolate_protagonist_face(
         full_image_path: str,
-        averaged_reference: np.ndarray  
+        averaged_reference: list 
     ) -> Optional[Dict]:
         """
         Detect protagonist using YOLO + face detection with cached averaged embedding
@@ -141,6 +143,7 @@ class FaceDetectionService:
                 logger.info(f"Multiple people ({len(person_regions)}) - comparing faces")
                 
                 temp_dir = Path(full_image_path).parent / "temp_crops"
+                # temp_dir = Path(full_image_path).parent / f"temp_crops_{uuid.uuid4().hex[:8]}"
                 temp_dir.mkdir(exist_ok=True)
                 
                 best_match_idx = None
@@ -161,26 +164,22 @@ class FaceDetectionService:
                     
                     # Detect face within person crop
                     try:
-                        faces = DeepFace.extract_faces(
-                            img_path=str(person_crop_path),
-                            detector_backend='retinaface',
-                            enforce_detection=False
-                        )
-                        
-                        if not faces:
-                            logger.info(f"No face in person {idx}")
-                            continue
-                        
-                        # Get face embedding from crop
+       
                         face_data = DeepFace.represent(
                             img_path=str(person_crop_path),
-                            model_name='Facenet',
+                            model_name='Facenet512',
                             enforce_detection=False
                         )
                         
                         if face_data:
                             encoding = np.array(face_data[0]['embedding'])
-                            distance = np.linalg.norm(averaged_reference - encoding)
+                            # norm_enc = encoding / np.linalg.norm(encoding)
+                            # distance = 1.0 - np.dot(averaged_reference, norm_enc) 
+                            norm_enc = encoding / np.linalg.norm(encoding)
+                            distances = [1.0 - np.dot(ref, norm_enc) for ref in averaged_reference]
+                            distance = min(distances)
+ 
+
                             
                             logger.info(f"Person {idx} face distance: {distance:.2f}")
                             
@@ -199,7 +198,7 @@ class FaceDetectionService:
                 if temp_dir.exists():
                     shutil.rmtree(temp_dir)
                 
-                if best_distance > FaceDetectionService.SIMILARITY_THRESHOLD or best_person_bbox is None:
+                if best_person_bbox is None:
                     logger.warning(f"No protagonist match found (best distance: {best_distance:.2f})")
                     return None
                 
