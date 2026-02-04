@@ -54,7 +54,9 @@ class FaceDetectionService:
             
             boxes = results[0].boxes.xyxy.cpu().numpy()
             classes = results[0].boxes.cls.cpu().numpy()
-            
+            masks = None
+            if results[0].masks is not None:
+                masks = results[0].masks.data.cpu().numpy()
             # Filter for person class only (class ID = 0)
             person_indices = np.where(classes == 0)[0]
             
@@ -77,11 +79,24 @@ class FaceDetectionService:
                 y1_padded = max(0, y1 - pad)
                 x2_padded = min(width, x2 + pad)
                 y2_padded = min(height, y2 + pad)
-                
+                # Extract and resize mask for this person
+                person_mask = None
+                if masks is not None:
+                    person_mask = masks[idx]
+                    person_mask = cv2.resize(person_mask, (width, height), interpolation=cv2.INTER_LINEAR)
+                    person_mask = (person_mask > 0.5).astype(np.uint8) * 255
+
                 person_regions.append({
                     'bbox': (x1_padded, y1_padded, x2_padded, y2_padded),
+                    'mask': person_mask,  # ADD THIS
                     'index': len(person_regions)
                 })
+
+
+                # person_regions.append({
+                #     'bbox': (x1_padded, y1_padded, x2_padded, y2_padded),
+                #     'index': len(person_regions)
+                # })
             
             return person_regions
             
@@ -119,6 +134,7 @@ class FaceDetectionService:
             if len(person_regions) == 1:
                 logger.info("⚡ Single person detected - skipping comparison")
                 best_person_bbox = person_regions[0]['bbox']
+                best_person_mask = person_regions[0].get('mask', None)
                 best_distance = 0.0
             else:
                 # STEP 3: Multiple people - find protagonist by face matching
@@ -172,6 +188,7 @@ class FaceDetectionService:
                                 best_distance = distance
                                 best_match_idx = idx
                                 best_person_bbox = bbox
+                                best_person_mask = person_data.get('mask', None)
                                 
                     except Exception as e:
                         logger.warning(f"Failed to process person {idx}: {e}")
@@ -206,7 +223,8 @@ class FaceDetectionService:
                     'bottom': y2,
                     'left': x1,
                     'right': x2
-                }
+                },
+                'mask': best_person_mask
             }
             
         except Exception as e:
@@ -221,7 +239,8 @@ class FaceDetectionService:
         original_image_path: str,
         swapped_face_path: str,
         face_coordinates: Dict,
-        output_path: str
+        output_path: str,
+        segmentation_mask: Optional[np.ndarray] = None  # ADD THIS LINE
     ) -> str:
         """
         Composite swapped face back into original image
@@ -234,8 +253,21 @@ class FaceDetectionService:
             crop_height = face_coordinates['bottom'] - face_coordinates['top']
             swapped_face = swapped_face.resize((crop_width, crop_height), Image.LANCZOS)
             
-            mask = Image.new('L', (crop_width, crop_height), 255)
-            mask = mask.filter(ImageFilter.GaussianBlur(radius=8))
+            # mask = Image.new('L', (crop_width, crop_height), 255)
+            # mask = mask.filter(ImageFilter.GaussianBlur(radius=8))
+            if segmentation_mask is not None:
+    # Use YOLO mask
+                mask = segmentation_mask[
+                    face_coordinates['top']:face_coordinates['bottom'],
+                    face_coordinates['left']:face_coordinates['right']
+                ]
+                mask = Image.fromarray(mask, mode='L')
+                mask = mask.filter(ImageFilter.GaussianBlur(radius=3))
+            else:
+                # Fallback
+                mask = Image.new('L', (crop_width, crop_height), 255)
+                mask = mask.filter(ImageFilter.GaussianBlur(radius=8))
+
             
             original.paste(
                 swapped_face,
