@@ -126,7 +126,7 @@ async def get_preview_status(preview_token: str):
         raise HTTPException(status_code=500, detail="Failed to fetch preview status")
 
 
-@router.post("/{preview_token}/phone_number")
+@router.post("previews/{preview_token}/phone_number")
 async def add_contact_for_notification(
     preview_token: str,
     request: ContactNotificationRequest
