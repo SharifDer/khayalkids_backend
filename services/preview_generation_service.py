@@ -256,7 +256,7 @@ class PreviewGenerationService:
                 try:
                     ref_data = DeepFace.represent(
                         img_path=str(ref_path),
-                        model_name='Facenet',
+                        model_name='Facenet512',
                         enforce_detection=False
                     )
                     if ref_data:
@@ -268,7 +268,9 @@ class PreviewGenerationService:
             if not reference_embeddings:
                 raise ValueError("No valid reference images")
             
-            averaged_reference = np.mean(reference_embeddings, axis=0)
+            # averaged_reference = np.mean(reference_embeddings, axis=0)
+            # averaged_reference = averaged_reference / np.linalg.norm(averaged_reference)
+            normalized_refs = [emb / np.linalg.norm(emb) for emb in reference_embeddings]
             logger.info(f"⚡ Cached {len(reference_embeddings)} reference embeddings")
             
             # STEP 4: Process and swap faces (SHARED METHOD)
@@ -277,7 +279,7 @@ class PreviewGenerationService:
             
             image_metadata = await PreviewGenerationService.process_and_swap_faces(
                 extracted_images=extracted_images,
-                averaged_reference=averaged_reference,
+                averaged_reference=normalized_refs,
                 child_photo_path=str(cartoon_photo_path), 
                 swapped_images_dir=swapped_images_dir
             )
