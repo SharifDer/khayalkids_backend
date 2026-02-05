@@ -54,17 +54,12 @@ jobs:
           command_timeout: 15m
           script: |
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
-            docker compose down || true
-
-            # DELETE AND RECREATE folders
             sudo rm -rf /var/khayalkids
             sudo mkdir -p /var/khayalkids/stories /var/khayalkids/data /var/khayalkids/keys
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
-
             echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
             echo '${{ secrets.TWILIO_KEY }}' > /var/khayalkids/keys/twilio_key.json
             echo '${{ secrets.ADMIN_PASS }}' > /var/khayalkids/keys/admin.json
-
             docker compose pull
             docker compose up -d --force-recreate
             docker image prune -a -f
