@@ -54,6 +54,9 @@ jobs:
           command_timeout: 15m
           script: |
             cd /home/${{ secrets.DEPLOY_USER }}/khayalkids
+            docker compose down || true
+            sleep 5                                    # Wait for Docker to release locks
+            sudo umount /var/khayalkids/* 2>/dev/null || true  # Force unmount if needed
             sudo rm -rf /var/khayalkids
             sudo mkdir -p /var/khayalkids/stories /var/khayalkids/data /var/khayalkids/keys
             sudo chown -R ${{ secrets.DEPLOY_USER }}:${{ secrets.DEPLOY_USER }} /var/khayalkids
