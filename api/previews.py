@@ -140,12 +140,8 @@ async def add_contact_for_notification(
     if not preview:
         raise HTTPException(status_code=404, detail="Preview not found")
     
-    # # Check if already completed (optional validation)
-    # if preview.get("preview_status") == "completed":
-    #     raise HTTPException(
-    #         status_code=400, 
-    #         detail="Preview already completed. Please use support icons to contact us."
-    #     )
+    # Check if already completed (optional validation)
+
     
     # Save contact using class method
     await ContactRepository.create_contact(
@@ -153,9 +149,14 @@ async def add_contact_for_notification(
         book_id=request.book_id,
         phone_number=request.phone_number
     )
+    if preview.get("preview_status") == "completed":
+        return {
+        "message":"المعاينة الخاصة بك جاهزة, يمكنك رؤيتها مباشرة على الصفحة",
+        "preview_token": preview_token
+    }
     
     return {
-        "message": "سنرسل لك رابط المعاينة على الواتساب عند الجاهزية",
+        "message": "سنرسل لك رابط المعاينة برسالة نصية عند الجاهزية",
         "preview_token": preview_token
     }
 
