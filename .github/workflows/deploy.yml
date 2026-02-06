@@ -62,6 +62,7 @@ jobs:
             echo '${{ secrets.SEGMIND_API_KEY }}' > /var/khayalkids/keys/segmind_key.json
             echo '${{ secrets.TWILIO_KEY }}' > /var/khayalkids/keys/twilio_key.json
             echo '${{ secrets.ADMIN_PASS }}' > /var/khayalkids/keys/admin.json
+            echo '${{ secrets.HETZNER_KEY }}' > /var/khayalkids/keys/hetzner_key.json
             docker compose pull
             docker compose up -d --force-recreate
             docker image prune -a -f
