@@ -13,7 +13,10 @@ import numpy as np
 import tempfile
 from deepface import DeepFace
 from services.face_detection_service import FaceDetectionService
-
+import threading
+import schedule
+import time
+from services.snapshot_service import SnapshotService
 
 # Configure logging
 logging.basicConfig(
@@ -40,6 +43,19 @@ def create_directories():
         os.makedirs(directory, exist_ok=True)
         logger.info(f"✓ Directory ensured: {directory}")
 
+def run_backup_scheduler(snapshot_service: SnapshotService):
+    """Background thread for hourly snapshots"""
+    # Run first backup immediately on startup
+    logger.info("🔄 Running initial snapshot check...")
+    snapshot_service.backup_job()
+    
+    # Schedule hourly backups at :00
+    schedule.every().hour.at(":00").do(snapshot_service.backup_job)
+    logger.info("⏰ Scheduled hourly snapshot checks")
+    
+    while True:
+        schedule.run_pending()
+        time.sleep(60)  # Check every minute
 
 
 # Initialize directories immediately
@@ -70,6 +86,21 @@ async def lifespan(app: FastAPI):
     
     logger.info("✅ All models preloaded")
     logger.info("✅ All models preloaded")
+    if settings.HETZNER_API_TOKEN and settings.HETZNER_SERVER_NAME:
+        logger.info("🔄 Starting snapshot backup scheduler...")
+        snapshot_service = SnapshotService(
+            api_token=settings.HETZNER_API_TOKEN,
+            server_name=settings.HETZNER_SERVER_NAME
+        )
+        backup_thread = threading.Thread(
+            target=run_backup_scheduler, 
+            args=(snapshot_service,),
+            daemon=True
+        )
+        backup_thread.start()
+        logger.info("✅ Snapshot backup scheduler started")
+    else:
+        logger.warning("⚠️ Hetzner credentials missing - snapshot backups disabled")
     
     logger.info("✅ Application started successfully")
     
