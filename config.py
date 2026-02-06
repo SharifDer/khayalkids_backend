@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: str = "*"
     SEGMIND_API_KEY: str = ""
+
+    HETZNER_API_TOKEN: str = ""
+    HETZNER_SERVER_NAME: str = ""
+
     PRICING_CONFIG : Dict[str, Dict[str,float]]= {
         "SAR": {
             "rate": 1.0,
@@ -133,6 +137,11 @@ class Settings(BaseSettings):
         with open(admin_password_file) as f:
             data = json.load(f)
             self.admin_password = data.get("admin_pass")
-                
+
+        hetzner_key_file = Path("keys/hetzner_key.json")
+        with open(hetzner_key_file) as f:
+            data = json.load(f)
+            self.HETZNER_API_TOKEN = data.get("api_token")
+            self.HETZNER_SERVER_NAME = data.get("server_name")
 
 settings = Settings()
