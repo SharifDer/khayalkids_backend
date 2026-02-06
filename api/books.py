@@ -19,7 +19,7 @@ async def get_books(
     Args:
         limit_per_gender: If provided, returns first N books per gender (e.g., 3)
     """
-    response.headers["Cache-Control"] = "public, max-age=180"  
+    response.headers["Cache-Control"] = "public, max-age=604800"  
     try:
         books = await BookRepository.get_all_active(limit_per_gender=limit_per_gender)
         return books
@@ -35,7 +35,7 @@ async def get_book_detail(
     """
     Get detailed information about a specific book including preview images
     """
-    response.headers["Cache-Control"] = "public, max-age=180"
+    response.headers["Cache-Control"] = "public, max-age=604800"
     try:
         book = await BookRepository.get_by_id(book_id)
         
