@@ -27,6 +27,9 @@ class Settings(BaseSettings):
 
     HETZNER_API_TOKEN: str = ""
     HETZNER_SERVER_NAME: str = ""
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_CHAT_ID: str = ""
+    TELEGRAM_NOTIFICATIONS_ENABLED: bool = True
 
     PRICING_CONFIG : Dict[str, Dict[str,float]]= {
         "SAR": {
@@ -139,9 +142,18 @@ class Settings(BaseSettings):
             self.admin_password = data.get("admin_pass")
 
         hetzner_key_file = Path("keys/hetzner_key.json")
-        with open(hetzner_key_file) as f:
-            data = json.load(f)
-            self.HETZNER_API_TOKEN = data.get("api_token")
-            self.HETZNER_SERVER_NAME = data.get("server_name")
+        if hetzner_key_file.exists():
+            with open(hetzner_key_file) as f:
+                data = json.load(f)
+                self.HETZNER_API_TOKEN = data.get("api_token")
+                self.HETZNER_SERVER_NAME = data.get("server_name")
+
+        telegram_key_file = Path("keys/telegram_bot.json")
+        if telegram_key_file.exists():
+            with open(telegram_key_file) as f :
+                data = json.load(f)
+                self.TELEGRAM_BOT_TOKEN = data.get("bot_token")
+                self.TELEGRAM_CHAT_ID = data.get("chat_id", "")
+
 
 settings = Settings()
