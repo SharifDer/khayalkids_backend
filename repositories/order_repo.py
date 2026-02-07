@@ -120,3 +120,29 @@ class OrderRepository:
             return False
         
         return result['customer_email'].lower() == email.lower()
+    @staticmethod
+    async def get_all_orders(since: Optional[datetime] = None) -> List[Dict[str, Any]]:
+        """Get all orders with optional time filter"""
+        if since:
+            query = """
+                SELECT o.*, b.title as book_title, b.gender as book_gender,
+                    p.preview_token, p.child_name as preview_child_name
+                FROM orders o
+                LEFT JOIN books b ON o.book_id = b.id
+                LEFT JOIN previews p ON o.preview_id = p.id
+                WHERE o.created_at >= ?
+                ORDER BY o.created_at DESC
+            """
+            results = await Database.fetch_all(query, (since.isoformat(),))
+        else:
+            query = """
+                SELECT o.*, b.title as book_title, b.gender as book_gender,
+                    p.preview_token, p.child_name as preview_child_name
+                FROM orders o
+                LEFT JOIN books b ON o.book_id = b.id
+                LEFT JOIN previews p ON o.preview_id = p.id
+                ORDER BY o.created_at DESC
+            """
+            results = await Database.fetch_all(query)
+        
+        return results

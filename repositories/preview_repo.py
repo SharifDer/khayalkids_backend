@@ -1,9 +1,10 @@
 # Database operations for previews
 from database import Database
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 import json
 import logging
+from utils.file_utils import truncate_error_message
 
 logger = logging.getLogger(__name__)
 
@@ -74,10 +75,41 @@ class PreviewRepository:
         """
         
         images_json = json.dumps(swapped_images_paths) if swapped_images_paths else None
+        truncated_error = truncate_error_message(error_message)
         
         await Database.execute(
             query,
-            (status, images_json, error_message, cartoon_photo_path, preview_id)
+            (status, images_json, truncated_error, cartoon_photo_path, preview_id)
         )
         
         logger.info(f"Preview {preview_id} status updated to: {status}")
+
+
+    @staticmethod
+    async def get_all_previews(since: Optional[datetime] = None) -> List[Dict[str, Any]]:
+        """Get all previews with optional time filter"""
+        if since:
+            query = """
+                SELECT p.*, b.title as book_title, b.gender as book_gender
+                FROM previews p
+                LEFT JOIN books b ON p.book_id = b.id
+                WHERE p.created_at >= ?
+                ORDER BY p.created_at DESC
+            """
+            results = await Database.fetch_all(query, (since.isoformat(),))
+        else:
+            query = """
+                SELECT p.*, b.title as book_title, b.gender as book_gender
+                FROM previews p
+                LEFT JOIN books b ON p.book_id = b.id
+                ORDER BY p.created_at DESC
+            """
+            results = await Database.fetch_all(query)
+        
+        # Parse JSON fields
+        for result in results:
+            if result.get('swapped_images_paths'):
+                result['swapped_images_paths'] = json.loads(result['swapped_images_paths'])
+        
+        return results
+

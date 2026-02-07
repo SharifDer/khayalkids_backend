@@ -1,8 +1,10 @@
 # Database operations for generated books
 from database import Database
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import json
 import logging
+from datetime import datetime
+from utils.file_utils import truncate_error_message
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +57,9 @@ class GeneratedBookRepository:
                 updated_at = CURRENT_TIMESTAMP
             WHERE order_id = ?
         """
-        
-        await Database.execute(query, (status, error_message, order_id))
+        truncated_error = truncate_error_message(error_message)
+
+        await Database.execute(query, (status, truncated_error, order_id))
         logger.info(f"Generated book {order_id} status: {status}")
     
     @staticmethod
@@ -118,3 +121,34 @@ class GeneratedBookRepository:
         )
         
         logger.info(f"Generated book {order_id} completed")
+    @staticmethod
+    async def get_all_generated_books(since: Optional[datetime] = None) -> List[Dict[str, Any]]:
+        """Get all generated books with optional time filter"""
+        if since:
+            query = """
+                SELECT gb.*, o.order_number, o.child_name, o.customer_name,
+                    b.title as book_title, b.gender as book_gender
+                FROM generated_books gb
+                LEFT JOIN orders o ON gb.order_id = o.id
+                LEFT JOIN books b ON o.book_id = b.id
+                WHERE gb.created_at >= ?
+                ORDER BY gb.created_at DESC
+            """
+            results = await Database.fetch_all(query, (since.isoformat(),))
+        else:
+            query = """
+                SELECT gb.*, o.order_number, o.child_name, o.customer_name,
+                    b.title as book_title, b.gender as book_gender
+                FROM generated_books gb
+                LEFT JOIN orders o ON gb.order_id = o.id
+                LEFT JOIN books b ON o.book_id = b.id
+                ORDER BY gb.created_at DESC
+            """
+            results = await Database.fetch_all(query)
+        
+        # Parse JSON fields
+        for result in results:
+            if result.get('swapped_images_paths'):
+                result['swapped_images_paths'] = json.loads(result['swapped_images_paths'])
+        
+        return results

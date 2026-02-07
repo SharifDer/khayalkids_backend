@@ -1,7 +1,7 @@
 from database import Database
 from typing import List, Dict, Any, Optional
 import logging
-
+from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
@@ -42,3 +42,27 @@ class ContactRepository:
         query = "UPDATE clients_contacts SET message_sent = 1 WHERE id = ?"
         await Database.execute(query, (contact_id,))
         logger.info(f"Marked message as sent for contact {contact_id}")
+    @staticmethod
+    async def get_all_contacts(since: Optional[datetime] = None) -> List[Dict[str, Any]]:
+        """Get all contacts with optional time filter"""
+        if since:
+            query = """
+                SELECT c.*, b.title as book_title, p.child_name
+                FROM clients_contacts c
+                LEFT JOIN books b ON c.book_id = b.id
+                LEFT JOIN previews p ON c.preview_token = p.preview_token
+                WHERE c.submitted_at >= ?
+                ORDER BY c.submitted_at DESC
+            """
+            results = await Database.fetch_all(query, (since.isoformat(),))
+        else:
+            query = """
+                SELECT c.*, b.title as book_title, p.child_name
+                FROM clients_contacts c
+                LEFT JOIN books b ON c.book_id = b.id
+                LEFT JOIN previews p ON c.preview_token = p.preview_token
+                ORDER BY c.submitted_at DESC
+            """
+            results = await Database.fetch_all(query)
+        
+        return results
