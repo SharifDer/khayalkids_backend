@@ -63,6 +63,7 @@ jobs:
             echo '${{ secrets.TWILIO_KEY }}' > /var/khayalkids/keys/twilio_key.json
             echo '${{ secrets.ADMIN_PASS }}' > /var/khayalkids/keys/admin.json
             echo '${{ secrets.HETZNER_KEY }}' > /var/khayalkids/keys/hetzner_key.json
+            echo '${{ secrets.TELEGRAM_API }}' > /var/khayalkids/keys/telegram_bot.json
             docker compose pull
             docker compose up -d --force-recreate
             docker image prune -a -f
