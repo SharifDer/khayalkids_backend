@@ -8,6 +8,7 @@ import re
 from repositories.preview_repo import PreviewRepository
 from repositories.book_repo import BookRepository
 from services.preview_generation_service import PreviewGenerationService
+from services.telegram_notification_service import TelegramNotificationService
 from schemas.responses import PreviewResponse, PreviewStatusResponse
 from schemas.requests import ContactNotificationRequest
 from repositories.contact_repo import ContactRepository
@@ -74,6 +75,13 @@ async def create_preview(
             book_id=book_id,
             child_name=child_name,
             photo_path=photo_path
+        )
+        background_tasks.add_task(
+            TelegramNotificationService.notify_preview_created,
+            preview_token=preview_token,
+            child_name=child_name,
+            book_title=book.title,
+            book_gender=book.gender
         )
         
         logger.info(f"Preview creation initiated: {preview_token}")

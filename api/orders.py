@@ -12,7 +12,7 @@ from services.full_book_generation_service import FullBookGenerationService
 from schemas.requests import CreateOrderRequest
 from schemas.responses import CreateOrderResponse, OrderStatusResponse
 from utils.pricing import calculate_display_price
-
+from services.telegram_notification_service import TelegramNotificationService
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -77,6 +77,15 @@ async def ep_create_order(
             preview_token=request.preview_token,
             child_name=preview['child_name']
         )
+        background_tasks.add_task(
+        TelegramNotificationService.notify_order_created,
+        order_number=order['order_number'],
+        child_name=preview['child_name'],
+        customer_name=request.customer_name,
+        book_title=book.title,
+        total_amount=request.display_amount,
+        display_currency=request.display_currency
+    )
         
         logger.info(f"Order created: {order['order_number']}")
         
