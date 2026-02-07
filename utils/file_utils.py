@@ -9,6 +9,7 @@ from config import settings
 from PIL import Image
 import io
 from fastapi import UploadFile
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -113,3 +114,65 @@ def compress_image(upload_file: UploadFile, max_width: int = 1000, quality: int 
     buffer = io.BytesIO()
     img.save(buffer, format='JPEG', quality=quality, optimize=True)
     return buffer.getvalue()
+
+
+
+def truncate_error_message(message: Optional[str], max_length: int = 250) -> Optional[str]:
+    """
+    Truncate error messages to keep database clean.
+    
+    Cuts at:
+    1. First period (.) followed by space or newline
+    2. Second newline
+    3. max_length characters
+    
+    Args:
+        message: Error message to truncate
+        max_length: Maximum character length (default 250)
+    
+    Returns:
+        Truncated message or None if input is None/empty
+    """
+    if not message:
+        return message
+    
+    # Remove leading/trailing whitespace
+    message = message.strip()
+    
+    if not message:
+        return None
+    
+    # Strategy 1: Cut at first period followed by space/newline
+    first_sentence_end = -1
+    for i, char in enumerate(message):
+        if char == '.' and i + 1 < len(message):
+            next_char = message[i + 1]
+            if next_char in (' ', '\n', '\r'):
+                first_sentence_end = i + 1
+                break
+    
+    # Strategy 2: Cut at second newline
+    newline_count = 0
+    second_newline_pos = -1
+    for i, char in enumerate(message):
+        if char == '\n':
+            newline_count += 1
+            if newline_count == 2:
+                second_newline_pos = i
+                break
+    
+    # Determine cut position
+    cut_positions = [pos for pos in [first_sentence_end, second_newline_pos, max_length] if pos > 0]
+    
+    if cut_positions:
+        cut_at = min(cut_positions)
+        truncated = message[:cut_at].strip()
+        
+        # Add ellipsis if we actually truncated
+        if len(message) > cut_at:
+            truncated += "..."
+        
+        return truncated
+    
+    # Fallback: return original if shorter than max_length
+    return message[:max_length]
