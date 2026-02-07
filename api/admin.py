@@ -1,17 +1,26 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Query
 from schemas.requests import CreateBookRequest, UpdateBookRequest
 import json
 from repositories.book_repo import BookRepository
+from repositories.order_repo import OrderRepository
+from repositories.contact_repo import ContactRepository
+from repositories.generated_book_repo import GeneratedBookRepository
+from schemas.responses import (
+    AdminStatsResponse, StatsSummary, PreviewDetail, OrderDetail,
+    GeneratedBookDetail, ContactDetail
+)
+from collections import Counter
+from datetime import datetime, timedelta
 import os
 import shutil
 from pathlib import Path
 from config import settings
-from typing import Annotated, Any
+from typing import Annotated, Any, Optional
 from pydantic import BeforeValidator
 from pydantic.json_schema import SkipJsonSchema
 from utils.file_utils import compress_image
 import logging
-
+from repositories.preview_repo import PreviewRepository
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -188,3 +197,76 @@ async def update_book(
         await BookRepository.update(book_id, updates)
     
     return {"message": f"Book {book_id} updated", "updated_fields": list(updates.keys())}
+
+
+
+@router.get("/admin/stats", response_model=AdminStatsResponse)
+async def get_admin_stats(
+    admin_password: str,
+    days: Optional[int] = Query(None, description="Filter data from last N days"),
+    hours: Optional[int] = Query(None, description="Filter data from last N hours")
+):
+    """
+    Get comprehensive admin statistics with optional time filters.
+    
+    - **admin_password**: Admin authentication password
+    - **days**: Optional - Filter data from last N days
+    - **hours**: Optional - Filter data from last N hours (takes precedence over days)
+    """
+    # Authentication
+    if admin_password != settings.admin_password:
+        raise HTTPException(status_code=404, detail="Please enter a correct admin password")
+    
+    # Calculate time filter
+    since: Optional[datetime] = None
+    time_filter_desc: Optional[str] = None
+    
+    if hours is not None:
+        since = datetime.utcnow() - timedelta(hours=hours)
+        time_filter_desc = f"last_{hours}_hours"
+    elif days is not None:
+        since = datetime.utcnow() - timedelta(days=days)
+        time_filter_desc = f"last_{days}_days"
+    
+    # Fetch all data
+    previews_data = await PreviewRepository.get_all_previews(since=since)
+    orders_data = await OrderRepository.get_all_orders(since=since)
+    generated_books_data = await GeneratedBookRepository.get_all_generated_books(since=since)
+    contacts_data = await ContactRepository.get_all_contacts(since=since)
+    
+    # Convert to response models
+    previews = [PreviewDetail(**preview) for preview in previews_data]
+    orders = [OrderDetail(**order) for order in orders_data]
+    generated_books = [GeneratedBookDetail(**book) for book in generated_books_data]
+    contacts = [ContactDetail(**contact) for contact in contacts_data]
+    
+    # Calculate summary statistics
+    previews_by_status = dict(Counter(p.preview_status for p in previews))
+    orders_by_status = dict(Counter(o.order_status for o in orders))
+    orders_by_payment_status = dict(Counter(o.payment_status for o in orders))
+    generated_books_by_status = dict(Counter(gb.generation_status for gb in generated_books))
+    
+    contacts_messages_sent = sum(1 for c in contacts if c.message_sent == 1)
+    contacts_messages_pending = sum(1 for c in contacts if c.message_sent == 0)
+    
+    summary = StatsSummary(
+        total_previews=len(previews),
+        previews_by_status=previews_by_status,
+        total_orders=len(orders),
+        orders_by_status=orders_by_status,
+        orders_by_payment_status=orders_by_payment_status,
+        total_generated_books=len(generated_books),
+        generated_books_by_status=generated_books_by_status,
+        total_contacts=len(contacts),
+        contacts_messages_sent=contacts_messages_sent,
+        contacts_messages_pending=contacts_messages_pending
+    )
+    
+    return AdminStatsResponse(
+        summary=summary,
+        previews=previews,
+        orders=orders,
+        generated_books=generated_books,
+        contacts=contacts,
+        time_filter=time_filter_desc
+    )
